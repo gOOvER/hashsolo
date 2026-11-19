@@ -35,7 +35,8 @@ Because upstream has become largely unmaintained with outdated dependencies and 
 
 > [!NOTE]
 > **Fork Notice:** HashSolo is an actively maintained, hardened fork of [`benjamin-wilson/public-pool`](https://github.com/benjamin-wilson/public-pool).
-> For a ready-to-run **Dokploy** Docker Compose stack (including Bitcoin Core, HashSolo backend, and HashSolo UI), see **[gOOvER/hashsolo-dokploy](https://github.com/gOOvER/hashsolo-dokploy)**.
+> - 📚 **Full Documentation:** Read the **[HashSolo GitHub Wiki](https://github.com/gOOvER/hashsolo/wiki)** (Dokploy setup, all ENVs, Miner Setup, Discord Bot Components V2, Telegram/ntfy, API & Security).
+> - 🐳 **Docker Compose Stack:** See **[gOOvER/hashsolo-dokploy](https://github.com/gOOvER/hashsolo-dokploy)** for a ready-to-run Dokploy stack (`bitcoind` + `hashsolo` + `hashsolo-ui`).
 
 ---
 
