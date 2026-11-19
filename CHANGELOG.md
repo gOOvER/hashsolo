@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-19
+
 ### Added
 - Added `GET /api/info/miners` (`AppController.connectedMiners` / `ClientService.getConnectedMiners`) returning all active connected miner sessions with masked addresses, worker names, user agents, hashrates, best difficulties, and timestamps (15s cache).
 - Added `/stats [address]` and `/workers [address]` commands to `TelegramService` plus `getSubscriptionsByChatId` in `TelegramSubscriptionsService`.
