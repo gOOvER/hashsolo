@@ -183,4 +183,22 @@ export class ClientService {
         return result;
     }
 
+    public async getConnectedMiners() {
+        const clients = await this.clientRepository.find({
+            order: { hashRate: 'DESC' },
+        });
+        return clients.map((c) => ({
+            address: c.address.length > 12
+                ? `${c.address.slice(0, 6)}...${c.address.slice(-5)}`
+                : c.address,
+            worker: c.clientName,
+            sessionId: c.sessionId,
+            userAgent: c.userAgent || 'unknown',
+            hashRate: Number(c.hashRate) || 0,
+            bestDifficulty: Number(c.bestDifficulty) || 0,
+            startTime: c.startTime,
+            lastSeen: c.updatedAt,
+        }));
+    }
+
 }

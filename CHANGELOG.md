@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- Added `GET /api/info/miners` (`AppController.connectedMiners` / `ClientService.getConnectedMiners`) returning all active connected miner sessions with masked addresses, worker names, user agents, hashrates, best difficulties, and timestamps (15s cache).
 - Added `/stats [address]` and `/workers [address]` commands to `TelegramService` plus `getSubscriptionsByChatId` in `TelegramSubscriptionsService`.
 - Added per-session rejected share reason tracking (`rejectedLowDiff`, `rejectedStaleJob`, `rejectedDuplicate`) on `ClientEntity` / `ClientService` / `StratumV1Client`.
 - Added configurable VarDiff & start difficulty ENV options (`STRATUM_START_DIFF`, `VARDIFF_TARGET_TIME`, `VARDIFF_MIN_DIFF`) and SQLite `PRAGMA optimize;` after statistics cleanup.

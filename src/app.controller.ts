@@ -56,6 +56,20 @@ export class AppController {
 
   }
 
+  @Get('info/miners')
+  public async connectedMiners() {
+    const CACHE_KEY = 'CONNECTED_MINERS';
+    const cachedResult = await this.cacheManager.get(CACHE_KEY);
+
+    if (cachedResult != null) {
+      return cachedResult;
+    }
+
+    const miners = await this.clientService.getConnectedMiners();
+    await this.cacheManager.set(CACHE_KEY, miners, 15 * 1000);
+    return miners;
+  }
+
   @Get('pool')
   public async pool() {
 
