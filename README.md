@@ -90,5 +90,5 @@ npm run lint
 ## 💝 Support
 
 If you find **HashSolo** useful:
-- **Donate / Ko-fi / Buy Me a Coffee:** [donate.goover.dev](https://donate.goover.dev)
+- **Donate:** [donate.goover.dev](https://donate.goover.dev) · **Ko-fi:** [ko-fi.com/oldnoob](https://ko-fi.com/oldnoob) · **Buy Me a Coffee:** [buymeacoffee.com/goover](https://buymeacoffee.com/goover)
 - **Bitcoin (BTC Mainnet):** `bc1qt6wec64n3gnrhclp4vfckyvr8h27tmqswy28gc`
