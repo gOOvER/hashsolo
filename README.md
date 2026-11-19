@@ -97,6 +97,18 @@ npm run lint
 
 ---
 
+## 🤝 Contribute & Help Keep Solo Mining Alive!
+
+The original [`benjamin-wilson/public-pool`](https://github.com/benjamin-wilson/public-pool) is an awesome project, and we genuinely love this kind of decentralized, hobbyist-friendly Bitcoin solo mining — from tiny ESP32 miners to full ASICs.
+
+Because upstream has become largely unmaintained with outdated dependencies and unpatched security issues, **HashSolo** exists to actively carry that torch forward: **modern, fast, and hardened without known CVEs.**
+
+**Pull Requests, bug fixes, security improvements, miner compatibility reports, and feature ideas are warmly welcome!**
+- 🐛 Found a bug or miner quirk? Open an issue via our [Issue Templates](https://github.com/gOOvER/hashsolo/issues/new/choose).
+- 🔧 Want to contribute code? Fork the repo, pick an improvement, and open a [Pull Request](https://github.com/gOOvER/hashsolo/pulls) — every PR is appreciated and reviewed promptly.
+
+---
+
 ## 💝 Support
 
 If you find **HashSolo** useful:

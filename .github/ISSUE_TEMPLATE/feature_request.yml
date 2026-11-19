@@ -1,0 +1,31 @@
+name: ✨ Feature Request / Improvement
+description: Suggest a new feature, performance improvement, or upstream PR port
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: Have an idea to make **HashSolo** faster, safer, or nicer for solo miners? PRs are always welcome too!
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or Goal
+      description: What problem does this solve, or why would it help solo-mining operators and miners?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Solution
+      description: How should this work (API endpoints, ENV variables, Stratum behavior, etc.)?
+  - type: input
+    id: upstream
+    attributes:
+      label: Related Upstream Issue / PR (optional)
+      placeholder: e.g. benjamin-wilson/public-pool#162
+  - type: checkboxes
+    id: pr_willing
+    attributes:
+      label: Contribution
+      options:
+        - label: I'm willing to open a Pull Request for this

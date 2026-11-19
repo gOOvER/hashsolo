@@ -1,0 +1,36 @@
+name: ⛏️ Miner Compatibility Report
+description: Report compatibility, VarDiff, or user-agent issues with a specific miner hardware/firmware
+title: "[Miner]: "
+labels: ["miner-compatibility"]
+body:
+  - type: input
+    id: device
+    attributes:
+      label: Miner Model & Board
+      placeholder: e.g. Bitaxe Gamma, NerdQAxe++, NMMiner ESP32-S3, Braiins Mini Miner BMM101
+    validations:
+      required: true
+  - type: input
+    id: firmware
+    attributes:
+      label: Firmware Version
+      placeholder: e.g. ESP-Miner v2.9.0, NMMiner v2.0.05, Braiins OS 26.10
+    validations:
+      required: true
+  - type: input
+    id: user_agent
+    attributes:
+      label: Reported User-Agent (if visible)
+      placeholder: e.g. bitaxe/BM1370/v2.9.0 or Other
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Observed Behavior
+      description: Does it connect, submit shares, show correct hashrate/VarDiff, or reject shares?
+    validations:
+      required: true
+  - type: input
+    id: env_diff
+    attributes:
+      label: Pool Difficulty Settings
+      placeholder: e.g. STRATUM_START_DIFF=0.001, VARDIFF_MIN_DIFF=0.00001
