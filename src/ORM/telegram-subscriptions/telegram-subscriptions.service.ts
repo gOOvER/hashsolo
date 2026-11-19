@@ -18,6 +18,10 @@ export class TelegramSubscriptionsService {
         return await this.telegramSubscriptions.find({ where: { address } })
     }
 
+    public async getSubscriptionsByChatId(telegramChatId: number) {
+        return await this.telegramSubscriptions.find({ where: { telegramChatId } });
+    }
+
     public async saveSubscription(chatId: number, address: string) {
         return await this.telegramSubscriptions.save({
             telegramChatId: chatId,

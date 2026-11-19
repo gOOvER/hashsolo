@@ -2,8 +2,14 @@ import { ClientStatisticsService } from '../ORM/client-statistics/client-statist
 import { ClientEntity } from '../ORM/client/client.entity';
 
 const CACHE_SIZE = 30;
-const TARGET_SUBMISSION_PER_SECOND = 10;
-const MIN_DIFF = 0.00001;
+
+function parseEnvPositiveNumber(raw: string | undefined, fallback: number): number {
+    const parsed = parseFloat(raw ?? '');
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+const TARGET_SUBMISSION_PER_SECOND = parseEnvPositiveNumber(process.env.VARDIFF_TARGET_TIME, 10);
+const MIN_DIFF = parseEnvPositiveNumber(process.env.VARDIFF_MIN_DIFF, 0.00001);
 export class StratumV1ClientStatistics {
 
     private shares = 0;

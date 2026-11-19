@@ -59,6 +59,7 @@ export class AppService implements OnModuleInit {
         console.log(`Deleted ${deletedStatistics.affected} old statistics`);
         const deletedClients = await this.clientService.deleteOldClients();
         console.log(`Deleted ${deletedClients.affected} old clients`);
+        await this.dataSource.query('PRAGMA optimize;');
 
     }
 

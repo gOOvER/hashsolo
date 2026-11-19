@@ -84,6 +84,10 @@ export class StratumV1Client {
         private readonly addressSettingsService: AddressSettingsService,
         private readonly externalSharesService: ExternalSharesService
     ) {
+        const startDiff = parseFloat(this.configService.get<string>('STRATUM_START_DIFF') ?? '');
+        if (Number.isFinite(startDiff) && startDiff > 0) {
+            this.sessionDifficulty = startDiff;
+        }
 
         this.socket.on('data', (data: Buffer) => {
             if (this.connectionClosed || this.socket.destroyed || this.socket.writableEnded) {
@@ -544,6 +548,9 @@ export class StratumV1Client {
 
         // a miner may submit a job that doesn't exist anymore if it was removed by a new block notification (or expired, 5 min)
         if (job == null || (job.ownerSessionId != null && job.ownerSessionId !== this.extraNonceAndSessionId)) {
+            if (this.entity) {
+                void this.clientService.incrementRejected(this.entity.address, this.entity.clientName, this.entity.sessionId, 'rejectedStaleJob');
+            }
             const err = new StratumErrorMessage(
                 submission.id,
                 eStratumErrorCode.JobNotFound,
@@ -558,6 +565,9 @@ export class StratumV1Client {
         const jobTemplate = this.stratumV1JobsService.getJobTemplateById(job.jobTemplateId);
 
         if (jobTemplate == null) {
+            if (this.entity) {
+                void this.clientService.incrementRejected(this.entity.address, this.entity.clientName, this.entity.sessionId, 'rejectedStaleJob');
+            }
             const err = new StratumErrorMessage(
                 submission.id,
                 eStratumErrorCode.JobNotFound,
@@ -578,6 +588,9 @@ export class StratumV1Client {
             submission.versionMask ?? ''
         ].join(':');
         if (this.miningSubmissionHashes.has(submissionHash)) {
+            if (this.entity) {
+                void this.clientService.incrementRejected(this.entity.address, this.entity.clientName, this.entity.sessionId, 'rejectedDuplicate');
+            }
             const err = new StratumErrorMessage(
                 submission.id,
                 eStratumErrorCode.DuplicateShare,
@@ -685,6 +698,9 @@ export class StratumV1Client {
             }
 
         } else {
+            if (this.entity) {
+                void this.clientService.incrementRejected(this.entity.address, this.entity.clientName, this.entity.sessionId, 'rejectedLowDiff');
+            }
             const err = new StratumErrorMessage(
                 submission.id,
                 eStratumErrorCode.LowDifficultyShare,

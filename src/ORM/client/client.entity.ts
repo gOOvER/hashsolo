@@ -36,5 +36,14 @@ export class ClientEntity extends TrackedEntity {
     @Column({ default: 0 })
     hashRate: number;
 
+    @Column({ default: 0 })
+    rejectedLowDiff: number;
+
+    @Column({ default: 0 })
+    rejectedStaleJob: number;
+
+    @Column({ default: 0 })
+    rejectedDuplicate: number;
+
 }
 

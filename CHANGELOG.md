@@ -7,6 +7,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- Added `/stats [address]` and `/workers [address]` commands to `TelegramService` plus `getSubscriptionsByChatId` in `TelegramSubscriptionsService`.
+- Added per-session rejected share reason tracking (`rejectedLowDiff`, `rejectedStaleJob`, `rejectedDuplicate`) on `ClientEntity` / `ClientService` / `StratumV1Client`.
+- Added configurable VarDiff & start difficulty ENV options (`STRATUM_START_DIFF`, `VARDIFF_TARGET_TIME`, `VARDIFF_MIN_DIFF`) and SQLite `PRAGMA optimize;` after statistics cleanup.
 - Added Prometheus `/api/metrics` endpoint exposing pool hashrate, connected miners, found blocks, Bitcoin node sync/peers, and next-block reward.
 - Added `NtfyService` (`NTFY_URL`, `NTFY_TOPIC`, `NTFY_TOKEN`) and extended `NotificationService` / `TelegramService` with new best-difficulty (`BEST_DIFF_ALERT_MIN`) and worker online/offline (`DEVICE_NOTIFICATIONS_ENABLED`) alerts.
 - Added `GET /api/info/next-block-reward` (`rewardSats`, `subsidySats`, `feeSats`, `height`) from the latest `getblocktemplate` `coinbasevalue`.

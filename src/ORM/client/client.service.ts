@@ -59,6 +59,24 @@ export class ClientService {
         return await this.clientRepository.update({ address, clientName, sessionId }, { hashRate, deletedAt: null, updatedAt });
     }
 
+    public async incrementRejected(
+        address: string,
+        clientName: string,
+        sessionId: string,
+        reason: 'rejectedLowDiff' | 'rejectedStaleJob' | 'rejectedDuplicate'
+    ) {
+        return await this.clientRepository
+            .createQueryBuilder()
+            .update(ClientEntity)
+            .set({ [reason]: () => `${reason} + 1` })
+            .where('address = :address AND clientName = :clientName AND sessionId = :sessionId', {
+                address,
+                clientName,
+                sessionId
+            })
+            .execute();
+    }
+
     // public async save(client: Partial<ClientEntity>) {
     //     return await this.clientRepository.save(client);
     // }
