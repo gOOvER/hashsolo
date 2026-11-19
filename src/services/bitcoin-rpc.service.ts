@@ -9,6 +9,16 @@ import { RpcBlockService } from '../ORM/rpc-block/rpc-block.service';
 import { IBlockTemplate } from '../models/bitcoin-rpc/IBlockTemplate';
 import { IMiningInfo } from '../models/bitcoin-rpc/IMiningInfo';
 
+export interface IBlockchainInfo {
+    chain: string;
+    blocks: number;
+    headers: number;
+    verificationprogress: number;
+    initialblockdownload: boolean;
+    pruned: boolean;
+    size_on_disk: number;
+}
+
 @Injectable()
 export class BitcoinRpcService implements OnModuleInit {
 
@@ -185,6 +195,14 @@ export class BitcoinRpcService implements OnModuleInit {
             return null;
         }
 
+    }
+
+    public async getBlockchainInfo(): Promise<IBlockchainInfo | null> {
+        try {
+            return await this.callRpc<IBlockchainInfo>('getblockchaininfo');
+        } catch {
+            return null;
+        }
     }
 
     public async SUBMIT_BLOCK(hexdata: string): Promise<string> {

@@ -90,6 +90,44 @@ export class AppController {
     return miningInfo;
   }
 
+  @Get('node/status')
+  public async nodeStatus() {
+    const CACHE_KEY = 'BITCOIN_NODE_STATUS';
+    const cachedResult = await this.cacheManager.get(CACHE_KEY);
+    if (cachedResult != null) {
+      return cachedResult;
+    }
+
+    const info = await this.bitcoinRpcService.getBlockchainInfo();
+    const status = info
+      ? {
+          reachable: true,
+          ready: !info.initialblockdownload && info.blocks > 0,
+          chain: info.chain,
+          blocks: info.blocks,
+          headers: info.headers,
+          verificationProgress: info.verificationprogress,
+          initialBlockDownload: info.initialblockdownload,
+          pruned: info.pruned,
+          sizeOnDisk: info.size_on_disk
+        }
+      : {
+          reachable: false,
+          ready: false,
+          chain: null,
+          blocks: 0,
+          headers: 0,
+          verificationProgress: 0,
+          initialBlockDownload: true,
+          pruned: false,
+          sizeOnDisk: 0
+        };
+
+    // 3s short cache to protect RPC while keeping live UI updates responsive
+    await this.cacheManager.set(CACHE_KEY, status, 3000);
+    return status;
+  }
+
   @Get('info/chart')
   public async infoChart() {
 

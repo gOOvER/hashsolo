@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- Added `GET /api/node/status` endpoint and `BitcoinRpcService.getBlockchainInfo()` to report live `bitcoind` sync state (`reachable`, `ready`, `blocks`, `headers`, `verificationProgress`, `initialBlockDownload`, `pruned`, `sizeOnDisk`).
 - Added `.nvmrc` (`26`) for Node.js 26 default runtime selection.
 - Added composite indexes on `ClientStatisticsEntity` (`['address', 'time']` and `['address', 'clientName', 'time']`) for chart queries.
 - Added unit tests for `nearestPowerOfTwo` overflow handling, zero-delta division guards, TCP buffer overflow protection, non-positive `suggestedDifficulty` rejection, and `versionMask` validation.
