@@ -15,6 +15,16 @@
 
 </div>
 
+## 🤝 Contribute & Help Keep Solo Mining Alive!
+
+The original [`benjamin-wilson/public-pool`](https://github.com/benjamin-wilson/public-pool) is an awesome project, and we genuinely love this kind of decentralized, hobbyist-friendly Bitcoin solo mining — from tiny ESP32 miners to full ASICs.
+
+Because upstream has become largely unmaintained with outdated dependencies and unpatched security issues, **HashSolo** exists to actively carry that torch forward: **modern, fast, and hardened without known CVEs.**
+
+**Pull Requests, bug fixes, security improvements, miner compatibility reports, and feature ideas are warmly welcome!**
+- 🐛 Found a bug or miner quirk? Open an issue via our [Issue Templates](https://github.com/gOOvER/hashsolo/issues/new/choose).
+- 🔧 Want to contribute code? Fork the repo, pick an improvement, and open a [Pull Request](https://github.com/gOOvER/hashsolo/pulls) — every PR is appreciated and reviewed promptly.
+
 > [!IMPORTANT]
 > ### ⚡ Mine Live Now on **[hashsolo.goover.dev](https://hashsolo.goover.dev)**!
 > Want to solo-mine Bitcoin right away without running your own node? Point your **Bitaxe**, **NerdMiner**, **NMMiner**, **Antminer**, or **ASIC** straight to our public instance:
@@ -94,18 +104,6 @@ npm run lint
 ### PM2 Cluster Mode & TLS
 - `NODE_CLUSTER_SCHEDPOLICY=none pm2 start ecosystem.config.js` (`STRATUM_MAX_CONNECTIONS_PER_LISTENER` defaults to `10000`).
 - Behind a reverse proxy (Dokploy / Traefik / Caddy / Nginx), keep `API_SECURE=false` and let the proxy terminate HTTPS.
-
----
-
-## 🤝 Contribute & Help Keep Solo Mining Alive!
-
-The original [`benjamin-wilson/public-pool`](https://github.com/benjamin-wilson/public-pool) is an awesome project, and we genuinely love this kind of decentralized, hobbyist-friendly Bitcoin solo mining — from tiny ESP32 miners to full ASICs.
-
-Because upstream has become largely unmaintained with outdated dependencies and unpatched security issues, **HashSolo** exists to actively carry that torch forward: **modern, fast, and hardened without known CVEs.**
-
-**Pull Requests, bug fixes, security improvements, miner compatibility reports, and feature ideas are warmly welcome!**
-- 🐛 Found a bug or miner quirk? Open an issue via our [Issue Templates](https://github.com/gOOvER/hashsolo/issues/new/choose).
-- 🔧 Want to contribute code? Fork the repo, pick an improvement, and open a [Pull Request](https://github.com/gOOvER/hashsolo/pulls) — every PR is appreciated and reviewed promptly.
 
 ---
 
