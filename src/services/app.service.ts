@@ -32,6 +32,9 @@ export class AppService implements OnModuleInit {
 
         if (process.env.NODE_APP_INSTANCE == null || process.env.NODE_APP_INSTANCE == '0') {
 
+            // Clear stale active client sessions left behind by a previous process/container restart.
+            await this.clientService.deleteAll();
+
             setInterval(async () => {
                 await this.deleteOldStatistics();
             }, 1000 * 60 * 60);
@@ -39,7 +42,7 @@ export class AppService implements OnModuleInit {
             setInterval(async () => {
                 console.log('Killing dead clients');
                 await this.clientService.killDeadClients();
-            }, 1000 * 60 * 5);
+            }, 1000 * 60);
 
             setInterval(async () => {
                 console.log('Deleting Old Blocks');

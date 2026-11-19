@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added unit tests for `nearestPowerOfTwo` overflow handling, zero-delta division guards, TCP buffer overflow protection, non-positive `suggestedDifficulty` rejection, and `versionMask` validation.
 
 ### Fixed
+- Cleared stale active `ClientEntity` sessions (`clientService.deleteAll()` soft-delete) on startup in `AppService.onModuleInit()` and shortened the `killDeadClients()` sweep interval from 5 minutes to 1 minute so container restarts never leave duplicate phantom worker sessions.
 - Fixed `SubscriptionMessage.refineUserAgent()` matching `bosminer`/`bOS`/`cpuminer` before truncating at `-`/`/`/`V`/space so newer Braiins OS user agents (`2026-...;bosminer...`) report as `Braiins OS` instead of `2026`, and bare version/date prefixes fall back to the first whole token (`Vnish/1.2` -> `Vnish`).
 - Added `isNewPrevHash` detection in `StratumV1JobsService` so block reorgs at the same height also trigger `clearJobs = true`.
 - Clamped initial first-slot `StratumV1ClientStatistics` hashrate denominator to at least 60 seconds when `previousShares === 0` to prevent startup hashrate spikes from early shares.
