@@ -1,0 +1,52 @@
+name: 🐛 Bug Report
+description: Report a bug in the HashSolo Stratum backend, RPC/ZMQ layer, API, or notifications
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for helping harden **HashSolo**! Please share as much detail as possible so we can reproduce and fix the issue quickly.
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected Component
+      options:
+        - Stratum V1 Server / Share Validation
+        - Bitcoin Core RPC / ZMQ
+        - REST API (/api/*)
+        - SQLite / Statistics
+        - Discord / Telegram / ntfy Notifications
+        - Docker / Build / CI
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Clear description of the bug and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      placeholder: |
+        1. Connect miner ...
+        2. Send ...
+        3. Observe ...
+  - type: input
+    id: miner
+    attributes:
+      label: Miner Hardware & Firmware (if applicable)
+      placeholder: e.g. Bitaxe Ultra v2.9.0, NMMiner v2.0.05, Antminer S19
+  - type: input
+    id: environment
+    attributes:
+      label: Deployment & Node Environment
+      placeholder: e.g. Docker ghcr.io/goover/hashsolo:v1.0.0, Bitcoin Core 28.0 (pruned), Node 26
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Logs
+      render: shell
