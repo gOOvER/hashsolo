@@ -19,10 +19,22 @@ export interface IBlockchainInfo {
     size_on_disk: number;
 }
 
+export interface INetworkInfo {
+    connections: number;
+}
+
+export interface INextBlockReward {
+    rewardSats: number;
+    subsidySats: number;
+    feeSats: number;
+    height: number;
+}
+
 @Injectable()
 export class BitcoinRpcService implements OnModuleInit {
 
     private blockHeight = 0;
+    private latestTemplateInfo: { coinbasevalue: number; height: number } | null = null;
     private client: AxiosInstance;
     private rpcRequestId = 0;
     private _newBlock$: BehaviorSubject<IMiningInfo> = new BehaviorSubject(undefined);
@@ -182,6 +194,11 @@ export class BitcoinRpcService implements OnModuleInit {
             throw new Error('getblocktemplate returned null');
         }
 
+        this.latestTemplateInfo = {
+            coinbasevalue: blockTemplate.coinbasevalue,
+            height: blockTemplate.height
+        };
+
         await this.rpcBlockService.saveBlock(blockHeight, JSON.stringify(blockTemplate));
 
         return blockTemplate;
@@ -203,6 +220,29 @@ export class BitcoinRpcService implements OnModuleInit {
         } catch {
             return null;
         }
+    }
+
+    public async getNetworkInfo(): Promise<INetworkInfo | null> {
+        try {
+            return await this.callRpc<INetworkInfo>('getnetworkinfo');
+        } catch {
+            return null;
+        }
+    }
+
+    public getNextBlockReward(): INextBlockReward | null {
+        if (!this.latestTemplateInfo) {
+            return null;
+        }
+        const { coinbasevalue, height } = this.latestTemplateInfo;
+        const halvings = Math.floor(height / 210000);
+        const subsidySats = halvings >= 64 ? 0 : Math.floor((50 * 1e8) / Math.pow(2, halvings));
+        return {
+            rewardSats: coinbasevalue,
+            subsidySats,
+            feeSats: Math.max(0, coinbasevalue - subsidySats),
+            height
+        };
     }
 
     public async SUBMIT_BLOCK(hexdata: string): Promise<string> {

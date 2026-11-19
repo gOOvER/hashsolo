@@ -628,10 +628,6 @@ export class StratumV1Client {
                 });
 
                 await this.notificationService.notifySubscribersBlockFound(this.clientAuthorization.address, jobTemplate.blockData.height, updatedJobBlock, result);
-                //success
-                if (result == null || result === 'SUCCESS!') {
-                    await this.addressSettingsService.resetBestDifficultyAndShares();
-                }
             }
             await this.ensureClientEntity();
             try {

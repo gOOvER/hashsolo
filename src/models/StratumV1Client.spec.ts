@@ -615,9 +615,6 @@ describe('StratumV1Client', () => {
             submissionDifficulty: Number.MAX_SAFE_INTEGER,
             submissionHash: 'block-share'
         });
-        const addressSettings = moduleRef.get<AddressSettingsService>(AddressSettingsService);
-        jest.spyOn(addressSettings, 'resetBestDifficultyAndShares').mockResolvedValue(undefined);
-
         emitMessage(MockRecording1.MINING_SUBSCRIBE);
         emitMessage(`{"id": 4, "method": "mining.suggest_difficulty", "params": [0.00001]}`);
         emitMessage(MockRecording1.MINING_AUTHORIZE);
@@ -636,7 +633,6 @@ describe('StratumV1Client', () => {
             blockData: expect.any(String)
         }));
         expect(notificationService.notifySubscribersBlockFound).toHaveBeenCalled();
-        expect(addressSettings.resetBestDifficultyAndShares).toHaveBeenCalled();
         expect((client as any).write).toHaveBeenLastCalledWith(`{"id":5,"error":null,"result":true}\n`);
     });
 

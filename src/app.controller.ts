@@ -93,6 +93,16 @@ export class AppController {
     return miningInfo;
   }
 
+  @Get('info/next-block-reward')
+  public nextBlockReward() {
+    return this.bitcoinRpcService.getNextBlockReward() ?? {
+      rewardSats: 0,
+      subsidySats: 0,
+      feeSats: 0,
+      height: 0
+    };
+  }
+
   @Get('node/status')
   public async nodeStatus() {
     const CACHE_KEY = 'BITCOIN_NODE_STATUS';
@@ -101,7 +111,10 @@ export class AppController {
       return cachedResult;
     }
 
-    const info = await this.bitcoinRpcService.getBlockchainInfo();
+    const [info, networkInfo] = await Promise.all([
+      this.bitcoinRpcService.getBlockchainInfo(),
+      this.bitcoinRpcService.getNetworkInfo()
+    ]);
     const status = info
       ? {
           reachable: true,
@@ -112,7 +125,8 @@ export class AppController {
           verificationProgress: info.verificationprogress,
           initialBlockDownload: info.initialblockdownload,
           pruned: info.pruned,
-          sizeOnDisk: info.size_on_disk
+          sizeOnDisk: info.size_on_disk,
+          connections: networkInfo?.connections ?? null
         }
       : {
           reachable: false,
@@ -123,7 +137,8 @@ export class AppController {
           verificationProgress: 0,
           initialBlockDownload: true,
           pruned: false,
-          sizeOnDisk: 0
+          sizeOnDisk: 0,
+          connections: null
         };
 
     // 3s short cache to protect RPC while keeping live UI updates responsive

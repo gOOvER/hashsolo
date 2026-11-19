@@ -7,10 +7,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- Added `GET /api/info/next-block-reward` (`rewardSats`, `subsidySats`, `feeSats`, `height`) from the latest `getblocktemplate` `coinbasevalue`.
+- Added `connections` (Bitcoin P2P peer count from `getnetworkinfo`) to `GET /api/node/status`.
 - Added `GET /api/node/status` endpoint and `BitcoinRpcService.getBlockchainInfo()` to report live `bitcoind` sync state (`reachable`, `ready`, `blocks`, `headers`, `verificationProgress`, `initialBlockDownload`, `pruned`, `sizeOnDisk`).
 - Added `.nvmrc` (`26`) for Node.js 26 default runtime selection.
 - Added composite indexes on `ClientStatisticsEntity` (`['address', 'time']` and `['address', 'clientName', 'time']`) for chart queries.
 - Added unit tests for `nearestPowerOfTwo` overflow handling, zero-delta division guards, TCP buffer overflow protection, non-positive `suggestedDifficulty` rejection, and `versionMask` validation.
+
+### Fixed
+- Stopped calling `resetBestDifficultyAndShares()` on block found in `StratumV1Client` so address `bestDifficulty` and `shares` are preserved across blocks (inspired by `blitzpool`).
 
 ### Changed
 - Computed `fee` dynamically (`1.5` when `DEV_FEE_ADDRESS` is configured, `0` otherwise) in `/api/info` and `/api/pool`.

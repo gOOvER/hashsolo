@@ -70,15 +70,4 @@ export class AddressSettingsService {
             .where('address = :address', { address })
             .execute();
     }
-
-    public async resetBestDifficultyAndShares() {
-        return await this.addressSettingsRepository
-            .createQueryBuilder()
-            .update(AddressSettingsEntity)
-            .set({
-                shares: 0,
-                bestDifficulty: 0
-            })
-            .execute();
-    }
 }
