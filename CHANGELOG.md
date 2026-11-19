@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added unit tests for `nearestPowerOfTwo` overflow handling, zero-delta division guards, TCP buffer overflow protection, non-positive `suggestedDifficulty` rejection, and `versionMask` validation.
 
 ### Fixed
+- Clamped initial first-slot `StratumV1ClientStatistics` hashrate denominator to at least 60 seconds when `previousShares === 0` to prevent startup hashrate spikes from early shares.
 - Fixed `StratumV1JobsService` `merkle_branch` serialization for `bitcoinjs-lib` v7 (`Uint8Array` -> `Buffer.from(...)` so `mining.notify` sends 64-char hex hashes instead of comma-separated decimal byte strings).
 - Persisted `ClientEntity` immediately on `mining.authorize` in `StratumV1Client` so newly connected miners appear in the UI before submitting their first share.
 - Stopped calling `resetBestDifficultyAndShares()` on block found in `StratumV1Client` so address `bestDifficulty` and `shares` are preserved across blocks (inspired by `blitzpool`).

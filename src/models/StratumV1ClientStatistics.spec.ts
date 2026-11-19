@@ -121,4 +121,13 @@ describe('StratumV1ClientStatistics', () => {
         expect(Number.isFinite(statistics.hashRate)).toBe(true);
         expect(statistics.getSuggestedDifficulty(64)).toBeNull();
     });
+
+    it('should clamp initial warmup denominator to 60s to prevent startup hashrate spikes', async () => {
+        await statistics.addShares(client, 0.001);
+        jest.setSystemTime(new Date('2026-05-06T12:00:02Z'));
+        await statistics.addShares(client, 0.001);
+
+        const expected = (0.002 * 4294967296) / 60;
+        expect(statistics.hashRate).toBeCloseTo(expected, 2);
+    });
 });

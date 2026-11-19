@@ -117,7 +117,11 @@ export class StratumV1ClientStatistics {
 			if (this.shares > 0) {
                 const time = new Date().getTime() - this.previousTimeSlotTime.getTime();
                 if (time > 0) {
-                    this.hashRate = ((this.previousShares + this.shares) * 4294967296) / (time / 1000);
+                    // Use at least a 60s warmup denominator in the first slot so early lucky shares don't spike hashrate.
+                    const elapsedSeconds = this.previousShares === 0
+                        ? Math.max(time / 1000, 60)
+                        : time / 1000;
+                    this.hashRate = ((this.previousShares + this.shares) * 4294967296) / elapsedSeconds;
                 }
             }
         }
