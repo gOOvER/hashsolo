@@ -11,8 +11,16 @@
   [![Node.js](https://img.shields.io/badge/Node.js-26%2B-339933?logo=node.js&logoColor=white)](.nvmrc)
   [![License](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE.txt)
   [![Support](https://img.shields.io/badge/Support-donate.goover.dev-ff69b4?logo=ko-fi&logoColor=white)](https://donate.goover.dev)
+  [![Live Pool](https://img.shields.io/badge/Live%20Pool-hashsolo.goover.dev-f7931a?logo=bitcoin&logoColor=white)](https://hashsolo.goover.dev)
 
 </div>
+
+> [!IMPORTANT]
+> ### ⚡ Mine Live Now on **[hashsolo.goover.dev](https://hashsolo.goover.dev)**!
+> Want to solo-mine Bitcoin right away without running your own node? Point your **Bitaxe**, **NerdMiner**, **NMMiner**, **Antminer**, or **ASIC** straight to our public instance:
+> - **Web Dashboard:** [https://hashsolo.goover.dev](https://hashsolo.goover.dev)
+> - **Stratum V1 URL:** `stratum+tcp://hashsolo.goover.dev:3333` (Password: `x`)
+> - **Built for Everyone:** `STRATUM_START_DIFF=0.001` (ideal for KH/s & MH/s ESP miners as well as TH/s ASICs), **0% fee** below 50 TH/s, live node sync & reward stats, and instant **Telegram / ntfy** alerts.
 
 > [!NOTE]
 > **Fork Notice:** HashSolo is an actively maintained, hardened fork of [`benjamin-wilson/public-pool`](https://github.com/benjamin-wilson/public-pool).
