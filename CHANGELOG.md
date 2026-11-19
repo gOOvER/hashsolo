@@ -21,12 +21,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added unit tests for `nearestPowerOfTwo` overflow handling, zero-delta division guards, TCP buffer overflow protection, non-positive `suggestedDifficulty` rejection, and `versionMask` validation.
 
 ### Fixed
+- Fixed `SubscriptionMessage.refineUserAgent()` matching `bosminer`/`bOS`/`cpuminer` before truncating at `-`/`/`/`V`/space so newer Braiins OS user agents (`2026-...;bosminer...`) report as `Braiins OS` instead of `2026`, and bare version/date prefixes fall back to the first whole token (`Vnish/1.2` -> `Vnish`).
+- Added `isNewPrevHash` detection in `StratumV1JobsService` so block reorgs at the same height also trigger `clearJobs = true`.
 - Clamped initial first-slot `StratumV1ClientStatistics` hashrate denominator to at least 60 seconds when `previousShares === 0` to prevent startup hashrate spikes from early shares.
 - Fixed `StratumV1JobsService` `merkle_branch` serialization for `bitcoinjs-lib` v7 (`Uint8Array` -> `Buffer.from(...)` so `mining.notify` sends 64-char hex hashes instead of comma-separated decimal byte strings).
 - Persisted `ClientEntity` immediately on `mining.authorize` in `StratumV1Client` so newly connected miners appear in the UI before submitting their first share.
 - Stopped calling `resetBestDifficultyAndShares()` on block found in `StratumV1Client` so address `bestDifficulty` and `shares` are preserved across blocks (inspired by `blitzpool`).
 
 ### Changed
+- Enabled HTTP/HTTPS `keepAlive` agents on `BitcoinRpcService` and subscribed ZMQ to both `hashblock` (45-byte notifications) and `rawblock` (backward compatibility).
 - Computed `fee` dynamically (`1.5` when `DEV_FEE_ADDRESS` is configured, `0` otherwise) in `/api/info` and `/api/pool`.
 - Set Node.js 26 as the default runtime (`Dockerfile` updated to `node:26-bookworm-slim`, `package.json` `engines.node` set to `>=26.0.0`, `@types/node` updated to `^26.6.6`).
 - Upgraded major dependencies: NestJS 12 (`@nestjs/*@^12.x`), TypeORM 1.x (`^1.1.3`) with `better-sqlite3` (`12.11.1`, replacing `sqlite3`), `bitcoinjs-lib@^7.0.5` (`Uint8Array`/`bigint` API), `bitcoin-address-validation@^4.0.0`, `bs58@^6.0.0`, `TypeScript@^6.0.0`, `Jest@^30.5.2` (with `--experimental-vm-modules`), `ESLint@^10.15.0` + `@typescript-eslint/*@^8.73.0` (migrated to `eslint.config.mjs`), `@types/express@^5.0.6`, `zeromq@^6.8.0`, `axios@^1.21.1`, `discord.js@^14.28.1`, and `class-validator@^0.15.1`.
