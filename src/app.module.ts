@@ -15,6 +15,7 @@ import { ClientStatisticsModule } from './ORM/client-statistics/client-statistic
 import { ClientModule } from './ORM/client/client.module';
 import { RpcBlocksModule } from './ORM/rpc-block/rpc-block.module';
 import { TelegramSubscriptionsModule } from './ORM/telegram-subscriptions/telegram-subscriptions.module';
+import { DiscordSubscriptionsModule } from './ORM/discord-subscriptions/discord-subscriptions.module';
 import { AppService } from './services/app.service';
 import { BitcoinRpcService } from './services/bitcoin-rpc.service';
 import { DiscordService } from './services/discord.service';
@@ -32,6 +33,7 @@ const ORMModules = [
     ClientModule,
     AddressSettingsModule,
     TelegramSubscriptionsModule,
+    DiscordSubscriptionsModule,
     BlocksModule,
     RpcBlocksModule,
     ExternalSharesModule

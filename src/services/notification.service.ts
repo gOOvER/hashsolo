@@ -30,7 +30,7 @@ export class NotificationService implements OnModuleInit {
 
     public async notifySubscribersBlockFound(address: string, height: number, block: Block, message: string) {
         await Promise.allSettled([
-            this.discordService.notifySubscribersBlockFound(height, block, message),
+            this.discordService.notifySubscribersBlockFound(address, height, block, message),
             this.telegramService.notifySubscribersBlockFound(address, height, block, message),
             this.ntfyService.send('HashSolo: Block Found!', `Height: ${height}, Address: ${address}, Result: ${message}`, 'urgent', 'tada,bitcoin')
         ]);
@@ -42,6 +42,7 @@ export class NotificationService implements OnModuleInit {
         }
         const device = userAgent ? ` (${userAgent})` : '';
         await Promise.allSettled([
+            this.discordService.notifySubscribersBestDifficulty(address, worker, difficulty, userAgent),
             this.telegramService.notifySubscribersBestDifficulty(address, worker, difficulty, userAgent),
             this.ntfyService.send(
                 'HashSolo: New Best Difficulty',
@@ -58,6 +59,7 @@ export class NotificationService implements OnModuleInit {
         }
         const device = userAgent ? ` (${userAgent})` : '';
         await Promise.allSettled([
+            this.discordService.notifyWorkerStatus(address, worker, status, userAgent),
             this.telegramService.notifyWorkerStatus(address, worker, status, userAgent),
             this.ntfyService.send(
                 `HashSolo: Worker ${status}`,
