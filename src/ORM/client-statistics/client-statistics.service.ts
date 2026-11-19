@@ -79,6 +79,39 @@ export class ClientStatisticsService {
 
     }
 
+    public async getAccountingSummary() {
+        const now = Date.now();
+        const oneHourAgo = now - (60 * 60 * 1000);
+        const currentSlot = Math.floor(now / (10 * 60 * 1000)) * (10 * 60 * 1000);
+        const prevSlot = currentSlot - (10 * 60 * 1000);
+
+        const rows: Array<{ totalShares: number | null; hourShares: number | null; recentShares: number | null }> =
+            await this.clientStatisticsRepository.query(
+                `SELECT
+                    COALESCE(SUM(shares), 0) AS totalShares,
+                    COALESCE(SUM(CASE WHEN time >= ? THEN shares ELSE 0 END), 0) AS hourShares,
+                    COALESCE(SUM(CASE WHEN time >= ? THEN shares ELSE 0 END), 0) AS recentShares
+                 FROM client_statistics_entity`,
+                [oneHourAgo, prevSlot]
+            );
+
+        const row = rows?.[0] ?? { totalShares: 0, hourShares: 0, recentShares: 0 };
+        const totalCreditedDifficulty = Number(row.totalShares) || 0;
+        const creditedDifficultyLastHour = Number(row.hourShares) || 0;
+        const creditedDifficultyLast10Minutes = Number(row.recentShares) || 0;
+
+        const recentElapsedSec = Math.max((now - prevSlot) / 1000, 60);
+        const hourElapsedSec = Math.max(Math.min((now - oneHourAgo) / 1000, 3600), 60);
+
+        return {
+            totalCreditedDifficulty,
+            creditedDifficultyLastHour,
+            creditedDifficultyLast10Minutes,
+            hashRateLast10Minutes: (creditedDifficultyLast10Minutes * 4294967296) / recentElapsedSec,
+            hashRateLastHour: (creditedDifficultyLastHour * 4294967296) / hourElapsedSec,
+        };
+    }
+
 
     // public async getHashRateForAddress(address: string) {
 
