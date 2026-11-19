@@ -294,7 +294,7 @@ export class StratumV1Client {
                     if (!success) {
                         return;
                     }
-                    await this.ensureClientEntity();
+                    void this.ensureClientEntity().catch(() => undefined);
                     void this.notificationService.notifyWorkerStatus(
                         this.clientAuthorization.address,
                         this.clientAuthorization.worker,
