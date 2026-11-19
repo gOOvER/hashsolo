@@ -70,6 +70,41 @@ export class AppController {
     return miners;
   }
 
+  @Get('info/accounting')
+  public async infoAccounting() {
+    const CACHE_KEY = 'SITE_ACCOUNTING';
+    const cachedResult = await this.cacheManager.get(CACHE_KEY);
+
+    if (cachedResult != null) {
+      return cachedResult;
+    }
+
+    const [highScores, summary, userAgents] = await Promise.all([
+      this.addressSettingsService.getHighScores(),
+      this.clientStatisticsService.getAccountingSummary(),
+      this.clientService.getUserAgents(),
+    ]);
+
+    const best = highScores?.[0];
+    const bestSubmissionDifficulty = Number(best?.bestDifficulty) || 0;
+    const bestSubmissionDifficultyAt = best?.updatedAt ?? null;
+    const liveHashrate = userAgents.reduce((acc, ua) => acc + (parseFloat(ua.totalHashRate) || 0), 0);
+
+    const data = {
+      bestSubmissionDifficulty,
+      bestSubmissionDifficultyAt,
+      totalCreditedDifficulty: summary.totalCreditedDifficulty,
+      creditedDifficultyLastHour: summary.creditedDifficultyLastHour,
+      creditedDifficultyLast10Minutes: summary.creditedDifficultyLast10Minutes,
+      hashRateLast10Minutes: liveHashrate > 0 ? liveHashrate : summary.hashRateLast10Minutes,
+      hashRateLastHour: summary.hashRateLastHour > 0 ? summary.hashRateLastHour : liveHashrate,
+      networkDifficultyPercent: 0,
+    };
+
+    await this.cacheManager.set(CACHE_KEY, data, 15 * 1000);
+    return data;
+  }
+
   @Get('pool')
   public async pool() {
 

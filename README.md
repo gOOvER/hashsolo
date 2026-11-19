@@ -55,6 +55,7 @@ Because upstream has become largely unmaintained with outdated dependencies and 
   - `GET /api/node/status`: Live `bitcoind` sync progress (`blocks`, `headers`, `verificationProgress`, `pruned`, `sizeOnDisk`, `connections`).
   - `GET /api/info/next-block-reward`: Live `coinbasevalue` (`rewardSats`, `subsidySats`, `feeSats`, `height`) from the current block template.
   - `GET /api/info/miners`: Live list of all active connected miner sessions (device, worker, masked address, session ID, hashrate, best difficulty, timestamps).
+  - `GET /api/info/accounting`: Live Solo Mining metrics (best difficulty, total/1h/10m credited work, and 10m/1h hashrates).
   - `GET /api/metrics`: Prometheus text exposition endpoint for Grafana/Prometheus monitoring.
 - **Dynamic Fee Reporting:** `/api/info` and `/api/pool` expose `fee` dynamically (`1.5` when `DEV_FEE_ADDRESS` is configured for miners `>= 50 TH/s`, `0` otherwise).
 - **Notifications & Bot Commands:**
