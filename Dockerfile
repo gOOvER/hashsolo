@@ -19,8 +19,8 @@ WORKDIR /build
 
 COPY . .
 
-# Build Public Pool using NPM
-RUN npm i && npm run build
+# Build HashSolo using NPM
+RUN npm ci && npm run build
 
 ############################
 # Docker final environment #

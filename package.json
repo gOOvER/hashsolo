@@ -32,7 +32,7 @@
     "@nestjs/schedule": "^12.0.4",
     "@nestjs/typeorm": "^12.0.3",
     "axios": "^1.21.1",
-    "better-sqlite3": "^13.2.0",
+    "better-sqlite3": "^12.11.1",
     "bitcoin-address-validation": "^4.0.0",
     "bitcoinjs-lib": "^7.0.5",
     "bs58": "^6.0.0",
