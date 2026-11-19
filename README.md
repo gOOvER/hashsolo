@@ -41,19 +41,20 @@
 ## 🚀 Key Improvements in This Fork
 
 - **Modern Runtime & Stack:** Node.js `26`, NestJS `12`, TypeORM `1.x` (`better-sqlite3`), `bitcoinjs-lib` `7`, TypeScript `6`, Jest `30`, ESLint `10`.
-- **Live Node & Reward Endpoints:**
+- **Live Node, Miners & Reward Endpoints:**
   - `GET /api/node/status`: Live `bitcoind` sync progress (`blocks`, `headers`, `verificationProgress`, `pruned`, `sizeOnDisk`, `connections`).
   - `GET /api/info/next-block-reward`: Live `coinbasevalue` (`rewardSats`, `subsidySats`, `feeSats`, `height`) from the current block template.
+  - `GET /api/info/miners`: Live list of all active connected miner sessions (device, worker, masked address, session ID, hashrate, best difficulty, timestamps).
   - `GET /api/metrics`: Prometheus text exposition endpoint for Grafana/Prometheus monitoring.
 - **Dynamic Fee Reporting:** `/api/info` and `/api/pool` expose `fee` dynamically (`1.5` when `DEV_FEE_ADDRESS` is configured for miners `>= 50 TH/s`, `0` otherwise).
 - **Notifications & Bot Commands:**
   - Telegram bot commands: `/subscribe <address>`, `/stats [address]`, `/workers [address]`.
   - Best-difficulty (`BEST_DIFF_ALERT_MIN`) and worker online/offline (`DEVICE_NOTIFICATIONS_ENABLED`) alerts via Telegram and **ntfy** (`NTFY_URL`, `NTFY_TOPIC`, `NTFY_TOKEN`).
-- **Performance & Security Hardening:**
-  - Non-root Docker image (`node`), configurable `CORS_ORIGIN`, graceful shutdown hooks.
-  - Synchronous `mining.submit` parser/validator on the Stratum hot path and pre-cached Merkle branches.
+- **Performance, Reliability & Security Hardening:**
+  - Non-root Docker image (`node`), configurable `CORS_ORIGIN`, graceful shutdown hooks, HTTP/HTTPS `keepAlive` on Bitcoin RPC, and ZMQ `hashblock` (45-byte notifications with `rawblock` fallback) + reorg `cleanJobs` detection.
+  - Synchronous `mining.submit` parser/validator on the Stratum hot path, pre-cached Merkle branches, 60s startup hashrate warmup smoothing, and automatic stale-session cleanup on startup + every 60s.
   - SQLite WAL mode with `PRAGMA synchronous = NORMAL`, `PRAGMA optimize;` on cleanup, and per-session rejected share reason tracking (`rejectedLowDiff`, `rejectedStaleJob`, `rejectedDuplicate`).
-  - Configurable VarDiff & start difficulty (`STRATUM_START_DIFF`, `VARDIFF_TARGET_TIME`, `VARDIFF_MIN_DIFF`) — great for KH/s miners like NMMiner as well as TH/s ASICs.
+  - Configurable VarDiff & start difficulty (`STRATUM_START_DIFF`, `VARDIFF_TARGET_TIME`, `VARDIFF_MIN_DIFF`) — great for KH/s miners like NMMiner as well as TH/s ASICs, plus Braiins OS user-agent parsing fix.
 
 ---
 
