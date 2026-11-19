@@ -9,11 +9,13 @@ import { TOTAL_EXTRANONCE_SIZE_BYTES } from './stratum.constants';
 
 const MAX_BLOCK_WEIGHT = 4000000;
 const MAX_SCRIPT_SIZE = 100; //   https://github.com/bitcoin/bitcoin/blob/ffdc3d6060f6e65e69cf115a13b83e6eb4a0a0a8/src/consensus/tx_check.cpp#L49
+const MAX_PAYMENT_SCRIPT_CACHE = 10000;
 interface AddressObject {
     address: string;
     percent: number;
 }
 export class MiningJob {
+    private static paymentScriptCache = new Map<string, Buffer>();
 
     private coinbaseTransaction: bitcoinjs.Transaction;
     private coinbasePart1: string;
@@ -25,6 +27,7 @@ export class MiningJob {
     public jobTemplateId: string;
     public networkDifficulty: number;
     public creation: number;
+    public ownerSessionId?: string;
 
     constructor(
         configService: ConfigService,
@@ -36,7 +39,7 @@ export class MiningJob {
 
         this.creation = new Date().getTime();
         this.jobTemplateId = jobTemplate.blockData.id;
-        this.merkleBranchBuffers = jobTemplate.merkle_branch.map(branch => Buffer.from(branch, 'hex'));
+        this.merkleBranchBuffers = jobTemplate.merkleBranchBuffers ?? jobTemplate.merkle_branch.map(branch => Buffer.from(branch, 'hex'));
 
         this.coinbaseTransaction = this.createCoinbaseTransaction(payoutInformation, jobTemplate.blockData.coinbasevalue);
 
@@ -49,8 +52,8 @@ export class MiningJob {
 
         //    39th byte onwards: Optional data with no consensus meaning
         // Initial pool identifier
-        let poolIdentifier = configService.get('POOL_IDENTIFIER') || 'Public-Pool';
-        let extra = Buffer.from(poolIdentifier);
+        const poolIdentifier = configService.get('POOL_IDENTIFIER') || 'HashSolo';
+        const extra = Buffer.from(poolIdentifier);
 
         // Encode the block height
         // https://github.com/bitcoin/bips/blob/master/bip-0034.mediawiki
@@ -71,20 +74,20 @@ export class MiningJob {
         }
 
         this.coinbaseTransaction.ins[0].script = script;
-        this.coinbaseTransaction.addOutput(bitcoinjs.script.compile([bitcoinjs.opcodes.OP_RETURN, Buffer.concat([segwitMagicBits, jobTemplate.block.witnessCommit])]), 0);
+        this.coinbaseTransaction.addOutput(bitcoinjs.script.compile([bitcoinjs.opcodes.OP_RETURN, Buffer.concat([segwitMagicBits, jobTemplate.block.witnessCommit])]), 0n);
 
         // Check if the pool identifier is too long
-        if ((this.coinbaseTransaction.weight() + jobTemplate.block.weight()) > MAX_BLOCK_WEIGHT) {
+        const baseBlockWeight = jobTemplate.blockData.templateWeight ?? jobTemplate.block.weight();
+        if ((this.coinbaseTransaction.weight() + baseBlockWeight) > MAX_BLOCK_WEIGHT) {
             console.warn('Block weight exceeds the maximum allowed weight, removing the pool identifier');
-            let script = Buffer.concat([blockHeightLengthByte, blockHeightEncoded, padding]);
+            const script = Buffer.concat([blockHeightLengthByte, blockHeightEncoded, padding]);
             this.coinbaseTransaction.ins[0].script = script;
         }
 
         // get the non-witness coinbase tx
-        //@ts-ignore
-        const serializedCoinbaseTx = this.coinbaseTransaction.__toBuffer().toString('hex');
+        const serializedCoinbaseTx = Buffer.from((this.coinbaseTransaction as any).__toBuffer()).toString('hex');
 
-        const inputScript = this.coinbaseTransaction.ins[0].script.toString('hex');
+        const inputScript = Buffer.from(this.coinbaseTransaction.ins[0].script).toString('hex');
 
         const partOneIndex = serializedCoinbaseTx.indexOf(inputScript) + inputScript.length;
 
@@ -106,7 +109,7 @@ export class MiningJob {
             Buffer.from(`${extraNonce}${extraNonce2}`, 'hex'),
             this.coinbasePart2Buffer,
         ]);
-        const coinbaseHash = bitcoinjs.crypto.hash256(coinbaseBuffer);
+        const coinbaseHash = Buffer.from(bitcoinjs.crypto.hash256(coinbaseBuffer));
         const merkleRoot = this.calculateMerkleRootHash(coinbaseHash, this.merkleBranchBuffers);
 
         let version = jobTemplate.block.version;
@@ -116,7 +119,7 @@ export class MiningJob {
 
         const header = Buffer.alloc(80);
         header.writeInt32LE(version, 0);
-        jobTemplate.block.prevHash.copy(header, 4);
+        Buffer.from(jobTemplate.block.prevHash).copy(header, 4);
         merkleRoot.copy(header, 36);
         header.writeUInt32LE(timestamp, 68);
         header.writeUInt32LE(jobTemplate.block.bits, 72);
@@ -128,11 +131,17 @@ export class MiningJob {
     public copyAndUpdateBlock(jobTemplate: IJobTemplate, versionMask: number, nonce: number, extraNonce: string, extraNonce2: string, timestamp: number): bitcoinjs.Block {
 
         const testBlock = Object.assign(new bitcoinjs.Block(), jobTemplate.block);
-        testBlock.transactions = jobTemplate.block.transactions.map(tx => {
-            return Object.assign(new bitcoinjs.Transaction(), tx);
-        });
-
-        testBlock.transactions[0] = this.cloneCoinbaseTransaction();
+        if (jobTemplate.rawTransactions != null) {
+            testBlock.transactions = [
+                this.cloneCoinbaseTransaction(),
+                ...jobTemplate.rawTransactions.map(hex => bitcoinjs.Transaction.fromHex(hex))
+            ];
+        } else {
+            testBlock.transactions = jobTemplate.block.transactions.map(tx => {
+                return Object.assign(new bitcoinjs.Transaction(), tx);
+            });
+            testBlock.transactions[0] = this.cloneCoinbaseTransaction();
+        }
 
         testBlock.nonce = nonce;
 
@@ -142,12 +151,12 @@ export class MiningJob {
         }
 
         // set the nonces
-        const nonceScript = testBlock.transactions[0].ins[0].script.toString('hex');
+        const nonceScript = Buffer.from(testBlock.transactions[0].ins[0].script).toString('hex');
 
         testBlock.transactions[0].ins[0].script = Buffer.from(`${nonceScript.substring(0, nonceScript.length - (TOTAL_EXTRANONCE_SIZE_BYTES * 2))}${extraNonce}${extraNonce2}`, 'hex');
 
         //recompute the root since we updated the coinbase script with the nonces
-        testBlock.merkleRoot = this.calculateMerkleRootHash(testBlock.transactions[0].getHash(false), this.merkleBranchBuffers);
+        testBlock.merkleRoot = this.calculateMerkleRootHash(Buffer.from(testBlock.transactions[0].getHash(false)), this.merkleBranchBuffers);
 
 
         testBlock.timestamp = timestamp;
@@ -164,7 +173,7 @@ export class MiningJob {
 
         for (let i = 0; i < merkleBranches.length; i++) {
             bothMerkles.set(merkleBranches[i], 32);
-            newRoot = bitcoinjs.crypto.hash256(bothMerkles);
+            newRoot = Buffer.from(bitcoinjs.crypto.hash256(bothMerkles));
             bothMerkles.set(newRoot);
         }
 
@@ -188,11 +197,11 @@ export class MiningJob {
         addresses.forEach(recipientAddress => {
             const amount = Math.floor((recipientAddress.percent / 100) * reward);
             rewardBalance -= amount;
-            coinbaseTransaction.addOutput(this.getPaymentScript(recipientAddress.address), amount);
+            coinbaseTransaction.addOutput(this.getPaymentScript(recipientAddress.address), BigInt(amount));
         })
 
         //Add any remaining sats from the Math.floor
-        coinbaseTransaction.outs[0].value += rewardBalance;
+        coinbaseTransaction.outs[0].value += BigInt(rewardBalance);
 
         const segwitWitnessReservedValue = Buffer.alloc(32, 0);
 
@@ -203,27 +212,45 @@ export class MiningJob {
     }
 
     private getPaymentScript(address: string): Buffer {
+        const cacheKey = `${this.network.bech32}:${address}`;
+        const cached = MiningJob.paymentScriptCache.get(cacheKey);
+        if (cached != null) {
+            return cached;
+        }
+
         const addressInfo = getAddressInfo(address);
+        let script: Buffer;
         switch (addressInfo.type) {
             case AddressType.p2wpkh: {
-                return bitcoinjs.payments.p2wpkh({ address, network: this.network }).output;
+                script = Buffer.from(bitcoinjs.payments.p2wpkh({ address, network: this.network }).output);
+                break;
             }
             case AddressType.p2pkh: {
-                return bitcoinjs.payments.p2pkh({ address, network: this.network }).output;
+                script = Buffer.from(bitcoinjs.payments.p2pkh({ address, network: this.network }).output);
+                break;
             }
             case AddressType.p2sh: {
-                return bitcoinjs.payments.p2sh({ address, network: this.network }).output;
+                script = Buffer.from(bitcoinjs.payments.p2sh({ address, network: this.network }).output);
+                break;
             }
             case AddressType.p2tr: {
-                return bitcoinjs.payments.p2tr({ address, network: this.network }).output;
+                script = Buffer.from(bitcoinjs.payments.p2tr({ address, network: this.network }).output);
+                break;
             }
             case AddressType.p2wsh: {
-                return bitcoinjs.payments.p2wsh({ address, network: this.network }).output;
+                script = Buffer.from(bitcoinjs.payments.p2wsh({ address, network: this.network }).output);
+                break;
             }
             default: {
-                return Buffer.alloc(0);
+                throw new Error(`Unsupported Bitcoin address type: ${addressInfo.type}`);
             }
         }
+
+        if (MiningJob.paymentScriptCache.size >= MAX_PAYMENT_SCRIPT_CACHE) {
+            MiningJob.paymentScriptCache.clear();
+        }
+        MiningJob.paymentScriptCache.set(cacheKey, script);
+        return script;
     }
 
     public response(jobTemplate: IJobTemplate): string {
@@ -233,7 +260,7 @@ export class MiningJob {
             method: eResponseMethod.MINING_NOTIFY,
             params: [
                 this.jobId,
-                this.swapEndianWords(jobTemplate.block.prevHash).toString('hex'),
+                this.swapEndianWords(Buffer.from(jobTemplate.block.prevHash)).toString('hex'),
                 this.coinbasePart1,
                 this.coinbasePart2,
                 jobTemplate.merkle_branch,

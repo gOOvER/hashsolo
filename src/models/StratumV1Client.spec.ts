@@ -60,7 +60,7 @@ describe('StratumV1Client', () => {
     let consoleErrorSpy: jest.SpyInstance;
     let consoleWarnSpy: jest.SpyInstance;
 
-    let newBlockEmitter: BehaviorSubject<IMiningInfo> = new BehaviorSubject({
+    const newBlockEmitter: BehaviorSubject<IMiningInfo> = new BehaviorSubject({
         blocks: MockRecording1.BLOCK_TEMPLATE.height
     } as IMiningInfo);
 
@@ -70,7 +70,7 @@ describe('StratumV1Client', () => {
         moduleRef = await Test.createTestingModule({
             imports: [
                 TypeOrmModule.forRoot({
-                    type: 'sqlite',
+                    type: 'better-sqlite3',
                     database: ':memory:',
                     synchronize: true,
                     autoLoadEntities: true,
@@ -137,7 +137,7 @@ describe('StratumV1Client', () => {
         (StratumV1Client as any).blockedUserAgentLogState.clear();
         (StratumV1Client as any).validationErrorLogState.clear();
 
-        bitcoinRpcService = new MockBitcoinRpcService(configService,null);
+        bitcoinRpcService = new MockBitcoinRpcService(configService, null);
         jest.spyOn(bitcoinRpcService, 'getBlockTemplate').mockReturnValue(Promise.resolve(MockRecording1.BLOCK_TEMPLATE));
         bitcoinRpcService.newBlock$ = newBlockEmitter.asObservable();
 
@@ -149,7 +149,7 @@ describe('StratumV1Client', () => {
         //     socketEmitter = fn;
         // });
 
-        jest.spyOn(socket, 'on').mockImplementation((event: string, listener: (...args: any[]) => void) => {
+        jest.spyOn(socket, 'on').mockImplementation((event: string | symbol, listener: (...args: any[]) => void) => {
             socketEmitter = listener;
             return socket;
         });
@@ -259,7 +259,7 @@ describe('StratumV1Client', () => {
         await new Promise((r) => setTimeout(r, 1));
 
         const secondSocket = new Socket();
-        jest.spyOn(secondSocket, 'on').mockImplementation((event: string, listener: (...args: any[]) => void) => {
+        jest.spyOn(secondSocket, 'on').mockImplementation((event: string | symbol, listener: (...args: any[]) => void) => {
             socketEmitter = listener;
             return secondSocket;
         });
@@ -329,9 +329,13 @@ describe('StratumV1Client', () => {
 
     it('should save client', async () => {
         jest.spyOn(client as any, 'write').mockImplementation((data) => Promise.resolve(true));
+        jest.spyOn(client as any, 'calculateDifficulty').mockReturnValue({
+            submissionDifficulty: 1,
+            submissionHash: 'test-share'
+        });
 
         emitMessage(MockRecording1.MINING_SUBSCRIBE);
-        emitMessage(`{"id": 4, "method": "mining.suggest_difficulty", "params": [0]}`);
+        emitMessage(`{"id": 4, "method": "mining.suggest_difficulty", "params": [0.00001]}`);
         emitMessage(MockRecording1.MINING_AUTHORIZE);
         await new Promise((r) => setTimeout(r, 100));
         emitMessage(MockRecording1.MINING_SUBMIT);
@@ -357,10 +361,14 @@ describe('StratumV1Client', () => {
         jest.setSystemTime(date);
 
         jest.spyOn(client as any, 'write').mockImplementation((data) => Promise.resolve(true));
+        jest.spyOn(client as any, 'calculateDifficulty').mockReturnValue({
+            submissionDifficulty: 1,
+            submissionHash: 'test-share'
+        });
 
 
         emitMessage(MockRecording1.MINING_SUBSCRIBE);
-        emitMessage(`{"id": 4, "method": "mining.suggest_difficulty", "params": [0]}`);
+        emitMessage(`{"id": 4, "method": "mining.suggest_difficulty", "params": [0.00001]}`);
         emitMessage(MockRecording1.MINING_AUTHORIZE);
 
 
@@ -384,7 +392,7 @@ describe('StratumV1Client', () => {
         jest.useRealTimers();
         await new Promise((r) => setTimeout(r, 1000));
 
-        expect((client as any).write).lastCalledWith(`{\"id\":5,\"error\":null,\"result\":true}\n`);
+        expect((client as any).write).toHaveBeenLastCalledWith(`{\"id\":5,\"error\":null,\"result\":true}\n`);
 
 
     });
@@ -395,7 +403,7 @@ describe('StratumV1Client', () => {
         const fullBlockSpy = jest.spyOn(MiningJob.prototype, 'copyAndUpdateBlock');
 
         emitMessage(MockRecording1.MINING_SUBSCRIBE);
-        emitMessage(`{"id": 4, "method": "mining.suggest_difficulty", "params": [0]}`);
+        emitMessage(`{"id": 4, "method": "mining.suggest_difficulty", "params": [0.00001]}`);
         emitMessage(MockRecording1.MINING_AUTHORIZE);
         await new Promise((r) => setTimeout(r, 100));
 
@@ -411,9 +419,13 @@ describe('StratumV1Client', () => {
 
     it('should write accepted response before share accounting finishes', async () => {
         jest.spyOn(client as any, 'write').mockImplementation((data) => Promise.resolve(true));
+        jest.spyOn(client as any, 'calculateDifficulty').mockReturnValue({
+            submissionDifficulty: 1,
+            submissionHash: 'test-share'
+        });
 
         emitMessage(MockRecording1.MINING_SUBSCRIBE);
-        emitMessage(`{"id": 4, "method": "mining.suggest_difficulty", "params": [0]}`);
+        emitMessage(`{"id": 4, "method": "mining.suggest_difficulty", "params": [0.00001]}`);
         emitMessage(MockRecording1.MINING_AUTHORIZE);
         await new Promise((r) => setTimeout(r, 100));
 
@@ -424,6 +436,8 @@ describe('StratumV1Client', () => {
         jest.spyOn((client as any).statistics, 'addShares').mockReturnValue(accountingPromise);
 
         emitMessage(MockRecording1.MINING_SUBMIT);
+        await Promise.resolve();
+        await Promise.resolve();
         await Promise.resolve();
         await Promise.resolve();
         await Promise.resolve();
@@ -447,7 +461,7 @@ describe('StratumV1Client', () => {
         const clientUpdateIfHigherSpy = jest.spyOn(clientService as any, 'updateBestDifficultyIfHigher').mockResolvedValue({ affected: 1 });
 
         emitMessage(MockRecording1.MINING_SUBSCRIBE);
-        emitMessage(`{"id": 4, "method": "mining.suggest_difficulty", "params": [0]}`);
+        emitMessage(`{"id": 4, "method": "mining.suggest_difficulty", "params": [0.00001]}`);
         emitMessage(MockRecording1.MINING_AUTHORIZE);
         await new Promise((r) => setTimeout(r, 100));
 
@@ -470,7 +484,7 @@ describe('StratumV1Client', () => {
         jest.spyOn(client as any, 'write').mockImplementation((data) => Promise.resolve(true));
 
         emitMessage(MockRecording1.MINING_SUBSCRIBE);
-        emitMessage(`{"id": 4, "method": "mining.suggest_difficulty", "params": [0]}`);
+        emitMessage(`{"id": 4, "method": "mining.suggest_difficulty", "params": [0.00001]}`);
         emitMessage(MockRecording1.MINING_AUTHORIZE);
         await new Promise((r) => setTimeout(r, 100));
 
@@ -479,7 +493,7 @@ describe('StratumV1Client', () => {
         emitMessage(MockRecording1.MINING_SUBMIT);
         await new Promise((r) => setTimeout(r, 100));
 
-        expect((client as any).write).lastCalledWith(`{"id":5,"result":null,"error":[22,"Duplicate share",""]}\n`);
+        expect((client as any).write).toHaveBeenLastCalledWith(`{"id":5,"result":null,"error":[22,"Duplicate share",""]}\n`);
     });
 
     it('should reject submissions for unknown jobs', async () => {
@@ -487,14 +501,14 @@ describe('StratumV1Client', () => {
         const hashSpy = jest.spyOn(MiningSubmitMessage.prototype, 'hash');
 
         emitMessage(MockRecording1.MINING_SUBSCRIBE);
-        emitMessage(`{"id": 4, "method": "mining.suggest_difficulty", "params": [0]}`);
+        emitMessage(`{"id": 4, "method": "mining.suggest_difficulty", "params": [0.00001]}`);
         emitMessage(MockRecording1.MINING_AUTHORIZE);
         await new Promise((r) => setTimeout(r, 100));
 
         emitMessage(`{"id": 5, "method": "mining.submit", "params": ["tb1qumezefzdeqqwn5zfvgdrhxjzc5ylr39uhuxcz4.bitaxe3", "ff", "c708000000000000", "64b3f3ec", "ed460d91", "00002000"]}`);
         await new Promise((r) => setTimeout(r, 100));
 
-        expect((client as any).write).lastCalledWith(`{"id":5,"result":null,"error":[21,"Job not found",""]}\n`);
+        expect((client as any).write).toHaveBeenLastCalledWith(`{"id":5,"result":null,"error":[21,"Job not found",""]}\n`);
         expect(await clientService.connectedClientCount()).toBe(0);
         expect(hashSpy).not.toHaveBeenCalled();
     });
@@ -503,7 +517,7 @@ describe('StratumV1Client', () => {
         jest.spyOn(client as any, 'write').mockImplementation((data) => Promise.resolve(true));
 
         emitMessage(MockRecording1.MINING_SUBSCRIBE);
-        emitMessage(`{"id": 4, "method": "mining.suggest_difficulty", "params": [0]}`);
+        emitMessage(`{"id": 4, "method": "mining.suggest_difficulty", "params": [0.00001]}`);
         emitMessage(MockRecording1.MINING_AUTHORIZE);
         await new Promise((r) => setTimeout(r, 100));
         stratumV1JobsService.blocks = {};
@@ -511,7 +525,7 @@ describe('StratumV1Client', () => {
         emitMessage(MockRecording1.MINING_SUBMIT);
         await new Promise((r) => setTimeout(r, 100));
 
-        expect((client as any).write).lastCalledWith(`{"id":5,"result":null,"error":[21,"Job Template not found",""]}\n`);
+        expect((client as any).write).toHaveBeenLastCalledWith(`{"id":5,"result":null,"error":[21,"Job Template not found",""]}\n`);
     });
 
     it('should reject low difficulty shares', async () => {
@@ -525,7 +539,7 @@ describe('StratumV1Client', () => {
         emitMessage(MockRecording1.MINING_SUBMIT);
         await new Promise((r) => setTimeout(r, 100));
 
-        expect((client as any).write).lastCalledWith(`{"id":5,"result":null,"error":[23,"Difficulty too low",""]}\n`);
+        expect((client as any).write).toHaveBeenLastCalledWith(`{"id":5,"result":null,"error":[23,"Difficulty too low",""]}\n`);
         expect(await clientService.connectedClientCount()).toBe(0);
     });
 
@@ -539,7 +553,7 @@ describe('StratumV1Client', () => {
         emitMessage(`{"id": 5, "method": "mining.submit", "params": ["tb1qumezefzdeqqwn5zfvgdrhxjzc5ylr39uhuxcz4.bitaxe3", "1", "c7080000", "64b3f3ec", "ed460d91", "00002000"]}`);
         await new Promise((r) => setTimeout(r, 100));
 
-        expect((client as any).write).lastCalledWith(expect.stringContaining(`"error":[20,"Mining Submit validation error"`));
+        expect((client as any).write).toHaveBeenLastCalledWith(expect.stringContaining(`"error":[20,"Mining Submit validation error"`));
         expect(socket.destroy).toHaveBeenCalled();
         expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('Mining Submit validation error: extraNonce2:isLength'));
     });
@@ -555,7 +569,7 @@ describe('StratumV1Client', () => {
         await new Promise((r) => setTimeout(r, 100));
 
         const secondSocket = new Socket();
-        jest.spyOn(secondSocket, 'on').mockImplementation((event: string, listener: (...args: any[]) => void) => {
+        jest.spyOn(secondSocket, 'on').mockImplementation((event: string | symbol, listener: (...args: any[]) => void) => {
             socketEmitter = listener;
             return secondSocket;
         });
@@ -605,7 +619,7 @@ describe('StratumV1Client', () => {
         jest.spyOn(addressSettings, 'resetBestDifficultyAndShares').mockResolvedValue(undefined);
 
         emitMessage(MockRecording1.MINING_SUBSCRIBE);
-        emitMessage(`{"id": 4, "method": "mining.suggest_difficulty", "params": [0]}`);
+        emitMessage(`{"id": 4, "method": "mining.suggest_difficulty", "params": [0.00001]}`);
         emitMessage(MockRecording1.MINING_AUTHORIZE);
         await new Promise((r) => setTimeout(r, 100));
 
@@ -623,9 +637,39 @@ describe('StratumV1Client', () => {
         }));
         expect(notificationService.notifySubscribersBlockFound).toHaveBeenCalled();
         expect(addressSettings.resetBestDifficultyAndShares).toHaveBeenCalled();
-        expect((client as any).write).lastCalledWith(`{"id":5,"error":null,"result":true}\n`);
+        expect((client as any).write).toHaveBeenLastCalledWith(`{"id":5,"error":null,"result":true}\n`);
     });
 
+    it('should reject non-positive suggested difficulty values', async () => {
+        const writeSpy = jest.spyOn(client as any, 'write').mockImplementation(() => Promise.resolve(true));
 
+        emitMessage(MockRecording1.MINING_SUBSCRIBE);
+        emitMessage(`{"id": 4, "method": "mining.suggest_difficulty", "params": [0]}`);
+        await new Promise((r) => setTimeout(r, 50));
+
+        expect(writeSpy).toHaveBeenCalledWith(expect.stringContaining('Suggest difficulty validation error'));
+        expect((client as any).sessionDifficulty).toBe(100000);
+    });
+
+    it('should close socket when TCP buffer exceeds limit without newline', () => {
+        const destroySpy = jest.spyOn(socket, 'destroy');
+        socketEmitter(Buffer.alloc(17 * 1024, 'a'));
+
+        expect(destroySpy).toHaveBeenCalled();
+    });
+
+    it('should reject mining.submit with disallowed versionMask bits', async () => {
+        const writeSpy = jest.spyOn(client as any, 'write').mockImplementation(() => Promise.resolve(true));
+
+        emitMessage(MockRecording1.MINING_SUBSCRIBE);
+        emitMessage(`{"id": 4, "method": "mining.suggest_difficulty", "params": [0.00001]}`);
+        emitMessage(MockRecording1.MINING_AUTHORIZE);
+        await new Promise((r) => setTimeout(r, 100));
+
+        emitMessage(`{"id": 5, "method": "mining.submit", "params": ["tb1qumezefzdeqqwn5zfvgdrhxjzc5ylr39uhuxcz4.bitaxe3", "1", "9902000000000000", "64b1f10f", "2402812d", "00000001"]}`);
+        await new Promise((r) => setTimeout(r, 100));
+
+        expect(writeSpy).toHaveBeenCalledWith(expect.stringContaining('Invalid version mask'));
+    });
 
 });

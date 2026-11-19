@@ -14,6 +14,11 @@ export class ExternalSharesService {
         return await this.externalSharesRepository.insert(externalShare);
     }
 
+    public async existsByHeader(header: string): Promise<boolean> {
+        const count = await this.externalSharesRepository.count({ where: { header } });
+        return count > 0;
+    }
+
     public async getTopDifficulties(): Promise<Array<{userAgent: string, time: number, externalPoolName: string, difficulty: number}>> {
         return await this.externalSharesRepository
             .createQueryBuilder('share')

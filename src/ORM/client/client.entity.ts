@@ -9,7 +9,6 @@ import { TrackedEntity } from '../utils/TrackedEntity.entity';
 // or composite (multi-column) PRIMARY KEYs and that do not store large strings or BLOBs.
 //WITHOUT ROWID tables work best when individual rows are not too large.
 @Entity({ withoutRowid: true })
-@Index(['address', 'clientName', 'sessionId'], { unique: true })
 export class ClientEntity extends TrackedEntity {
 
 

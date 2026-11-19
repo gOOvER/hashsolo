@@ -107,4 +107,18 @@ describe('StratumV1ClientStatistics', () => {
 
         expect(statistics.getSuggestedDifficulty(128)).toBe(4);
     });
+
+    it('should handle large difficulties above 2^31 without 32-bit overflow', () => {
+        const result = (statistics as any).nearestPowerOfTwo(3_000_000_000);
+        expect(result).toBe(2_147_483_648);
+    });
+
+    it('should not produce Infinity hashRate or NaN difficulty when shares arrive in the same millisecond', async () => {
+        for (let i = 0; i < 5; i++) {
+            await statistics.addShares(client, 64);
+        }
+
+        expect(Number.isFinite(statistics.hashRate)).toBe(true);
+        expect(statistics.getSuggestedDifficulty(64)).toBeNull();
+    });
 });

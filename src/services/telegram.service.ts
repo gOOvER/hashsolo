@@ -67,8 +67,8 @@ export class TelegramService implements OnModuleInit {
                 this.updateOffset = update.update_id + 1;
                 await this.handleMessage(update.message);
             }
-        } catch (e) {
-            console.error('Telegram polling failed', e.message);
+        } catch (e: any) {
+            console.error('Telegram polling failed', e?.message ?? e);
         }
     }
 
@@ -78,8 +78,9 @@ export class TelegramService implements OnModuleInit {
         }
 
         if (msg.text.startsWith('/subscribe')) {
-            const address = msg.text.split('/subscribe ')[1];
-            if (validate(address) == false) {
+            const address = msg.text.split('/subscribe ')[1]?.trim();
+            const network = this.configService.get('NETWORK');
+            if (!address || validate(address, network) == false) {
                 await this.sendMessage(msg.chat.id, 'Invalid address.');
                 return;
             }
@@ -89,7 +90,7 @@ export class TelegramService implements OnModuleInit {
         }
 
         if (msg.text.startsWith('/start')) {
-            await this.sendMessage(msg.chat.id, 'Welcome to the public-pool bot. /subscribe <address> to get notified.');
+            await this.sendMessage(msg.chat.id, 'Welcome to the HashSolo bot. /subscribe <address> to get notified.');
             return;
         }
 

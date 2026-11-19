@@ -1,5 +1,5 @@
 import { Expose, Transform } from 'class-transformer';
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsString, Length } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsString, Length, Matches } from 'class-validator';
 
 import { eRequestMethod } from '../enums/eRequestMethod';
 import { EXTRANONCE2_SIZE_BYTES } from '../stratum.constants';
@@ -29,18 +29,21 @@ export class MiningSubmitMessage extends StratumBaseMessage {
     @Expose()
     @IsString()
     @Length(EXTRANONCE2_SIZE_BYTES * 2, EXTRANONCE2_SIZE_BYTES * 2)
+    @Matches(/^[0-9a-fA-F]+$/)
     @Transform(({ value, key, obj, type }) => {
         return obj.params[2];
     })
     public extraNonce2: string;
     @Expose()
     @IsString()
+    @Matches(/^[0-9a-fA-F]{8}$/)
     @Transform(({ value, key, obj, type }) => {
         return obj.params[3];
     })
     public ntime: string;
     @Expose()
     @IsString()
+    @Matches(/^[0-9a-fA-F]{8}$/)
     @Transform(({ value, key, obj, type }) => {
         return obj.params[4];
     })
@@ -48,6 +51,7 @@ export class MiningSubmitMessage extends StratumBaseMessage {
 
     @Expose()
     @IsString()
+    @Matches(/^[0-9a-fA-F]{1,8}$/)
     @Transform(({ value, key, obj, type }) => {
         return obj.params[5] == null ? '0' : obj.params[5];
     })
@@ -55,7 +59,7 @@ export class MiningSubmitMessage extends StratumBaseMessage {
 
     constructor() {
         super();
-        this.method = eRequestMethod.AUTHORIZE;
+        this.method = eRequestMethod.SUBMIT;
     }
 
 
@@ -69,7 +73,7 @@ export class MiningSubmitMessage extends StratumBaseMessage {
 
     public hash(): string{
         const buffer = Buffer.from(this.versionMask + this.nonce + this.extraNonce2 + this.ntime + this.jobId);
-        return bitcoinjs.crypto.hash256(buffer).toString('base64');
+        return Buffer.from(bitcoinjs.crypto.hash256(buffer)).toString('base64');
     }
 
 

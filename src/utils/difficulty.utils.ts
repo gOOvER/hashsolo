@@ -4,7 +4,7 @@ const TRUE_DIFF_ONE = 2.695953529101131e67;
 
 export class DifficultyUtils {
   static calculateDifficulty(header: Buffer): { submissionDifficulty: number; submissionHash: string } {
-    const hashResult = bitcoinjs.crypto.hash256(Buffer.isBuffer(header) ? header : Buffer.from(header, 'hex'));
+    const hashResult = Buffer.from(bitcoinjs.crypto.hash256(Buffer.isBuffer(header) ? header : Buffer.from(header, 'hex')));
     const target = DifficultyUtils.le256todouble(hashResult);
     const difficulty = target === 0 ? Number.POSITIVE_INFINITY : TRUE_DIFF_ONE / target;
     

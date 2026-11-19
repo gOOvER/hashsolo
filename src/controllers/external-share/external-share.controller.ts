@@ -1,5 +1,6 @@
-import { Body, Controller, Post, Get, UnauthorizedException, Headers } from '@nestjs/common';
+import { BadRequestException, Body, ConflictException, Controller, Get, Headers, Post, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as crypto from 'crypto';
 import { ExternalPoolShare } from '../../models/ExternalPoolShare';
 import { ExternalSharesService } from '../../ORM/external-shares/external-shares.service';
 import { DifficultyUtils } from '../../utils/difficulty.utils';
@@ -29,13 +30,26 @@ export class ExternalShareController {
     @Body() externalShare: ExternalPoolShare,
     @Headers('x-api-key') apiKey: string,
   ) {
-    // Only validate API key if one is configured
-    if (this.apiKey && apiKey !== this.apiKey) {
+    if (!this.apiKey) {
+      throw new UnauthorizedException('Share submission API key not configured');
+    }
+
+    const providedKey = Buffer.from(apiKey ?? '');
+    const expectedKey = Buffer.from(this.apiKey);
+    if (providedKey.length !== expectedKey.length || !crypto.timingSafeEqual(providedKey, expectedKey)) {
       throw new UnauthorizedException('Invalid API key');
     }
 
     // Validate the header hash matches claimed difficulty
     const headerBuffer = Buffer.from(externalShare.header, 'hex');
+    if (headerBuffer.length !== 80) {
+      throw new BadRequestException('Header must be exactly 80 bytes');
+    }
+
+    if (await this.externalSharesService.existsByHeader(externalShare.header)) {
+      throw new ConflictException('Duplicate share header');
+    }
+
     const { submissionDifficulty: difficulty } = DifficultyUtils.calculateDifficulty(headerBuffer);
 
     // Verify the calculated difficulty matches or exceeds minimum difficulty

@@ -2,7 +2,7 @@
 # Docker build environment #
 ############################
 
-FROM node:24.16.0-bookworm-slim AS build
+FROM node:26-bookworm-slim AS build
 
 # Upgrade all packages and install dependencies
 RUN apt-get update \
@@ -26,15 +26,18 @@ RUN npm i && npm run build
 # Docker final environment #
 ############################
 
-FROM node:24.16.0-bookworm-slim
+FROM node:26-bookworm-slim
 
 # Expose ports for Stratum and Bitcoin RPC
 EXPOSE 3333 3334 8332
 
-WORKDIR /public-pool
+WORKDIR /hashsolo
 
 # Copy built binaries into the final image
 COPY --from=build /build .
 #COPY .env.example .env
+
+RUN mkdir -p /hashsolo/DB && chown -R node:node /hashsolo
+USER node
 
 CMD ["/usr/local/bin/node", "dist/main"]

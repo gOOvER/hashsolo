@@ -1,4 +1,4 @@
-import { Controller, Patch } from '@nestjs/common';
+import { Controller, NotImplementedException, Patch } from '@nestjs/common';
 
 
 @Controller('address')
@@ -6,6 +6,6 @@ export class AddressController {
 
     @Patch('settings')
     async settings() {
-        return;
+        throw new NotImplementedException('Address settings are not implemented');
     }
 }

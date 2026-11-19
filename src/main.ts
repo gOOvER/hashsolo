@@ -38,17 +38,21 @@ async function bootstrap() {
     }),
   );
 
-  process.on('SIGINT', () => {
-    console.log(`Stopping services`);
-    process.exit(0);
-  });
+  app.enableShutdownHooks();
 
-  process.on('SIGTERM', () => {
-    console.log(`Stopping services`);
+  const shutdown = async () => {
+    console.log('Stopping services');
+    await app.close();
     process.exit(0);
-  });
+  };
 
-  app.enableCors();
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
+
+  const corsOrigin = process.env.CORS_ORIGIN?.trim();
+  app.enableCors({
+    origin: corsOrigin ? corsOrigin.split(',').map((o) => o.trim()) : true,
+  });
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
 
   //Taproot

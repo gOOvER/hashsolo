@@ -7,6 +7,9 @@ import { TrackedEntity } from '../utils/TrackedEntity.entity';
 @Index(["address", "clientName", "sessionId"])
 //Index for statistics save
 @Index(["address", "clientName", "sessionId", "time"])
+//Indexes for chart queries
+@Index(["address", "time"])
+@Index(["address", "clientName", "time"])
 export class ClientStatisticsEntity extends TrackedEntity {
 
     @PrimaryGeneratedColumn()

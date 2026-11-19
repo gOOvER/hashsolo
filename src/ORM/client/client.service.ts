@@ -45,7 +45,7 @@ export class ClientService {
     }
 
     public async killDeadClients() {
-        var fiveMinutes = new Date(new Date().getTime() - (5 * 60 * 1000)).toISOString();
+        const fiveMinutes = new Date(new Date().getTime() - (5 * 60 * 1000)).toISOString();
 
         return await this.clientRepository
             .createQueryBuilder()

@@ -50,7 +50,7 @@ export class ClientStatisticsService {
 
     public async getChartDataForSite() {
 
-        var yesterday = new Date(new Date().getTime() - (24 * 60 * 60 * 1000));
+        const yesterday = new Date(new Date().getTime() - (24 * 60 * 60 * 1000));
 
         const query = `
             SELECT
@@ -71,10 +71,11 @@ export class ClientStatisticsService {
         const result: any[] = await this.clientStatisticsRepository.query(query);
 
 
-        return result.map(res => {
+        const mapped = result.map(res => {
             res.label = new Date(res.label).toISOString();
             return res;
-        }).slice(0, result.length - 1)
+        });
+        return mapped.length > 1 ? mapped.slice(0, -1) : mapped;
 
     }
 
@@ -102,7 +103,7 @@ export class ClientStatisticsService {
 
     public async getChartDataForAddress(address: string) {
 
-        var yesterday = new Date(new Date().getTime() - (24 * 60 * 60 * 1000));
+        const yesterday = new Date(new Date().getTime() - (24 * 60 * 60 * 1000));
 
         const query = `
                 SELECT
@@ -122,10 +123,11 @@ export class ClientStatisticsService {
 
         const result = await this.clientStatisticsRepository.query(query, [address]);
 
-        return result.map(res => {
+        const mapped = result.map(res => {
             res.label = new Date(res.label).toISOString();
             return res;
-        }).slice(0, result.length - 1);
+        });
+        return mapped.length > 1 ? mapped.slice(0, -1) : mapped;
 
 
     }
@@ -133,7 +135,7 @@ export class ClientStatisticsService {
 
     public async getHashRateForGroup(address: string, clientName: string) {
 
-        var oneHour = new Date(new Date().getTime() - (60 * 60 * 1000));
+        const oneHour = new Date(new Date().getTime() - (60 * 60 * 1000));
 
         const query = `
             SELECT
@@ -154,7 +156,7 @@ export class ClientStatisticsService {
     }
 
     public async getChartDataForGroup(address: string, clientName: string) {
-        var yesterday = new Date(new Date().getTime() - (24 * 60 * 60 * 1000));
+        const yesterday = new Date(new Date().getTime() - (24 * 60 * 60 * 1000));
 
         const query = `
             SELECT
@@ -173,10 +175,11 @@ export class ClientStatisticsService {
 
         const result = await this.clientStatisticsRepository.query(query, [address, clientName]);
 
-        return result.map(res => {
+        const mapped = result.map(res => {
             res.label = new Date(res.label).toISOString();
             return res;
-        }).slice(0, result.length - 1);
+        });
+        return mapped.length > 1 ? mapped.slice(0, -1) : mapped;
 
 
     }
@@ -225,7 +228,7 @@ export class ClientStatisticsService {
     }
 
     public async getChartDataForSession(address: string, clientName: string, sessionId: string) {
-        var yesterday = new Date(new Date().getTime() - (24 * 60 * 60 * 1000));
+        const yesterday = new Date(new Date().getTime() - (24 * 60 * 60 * 1000));
 
         const query = `
             SELECT
@@ -244,10 +247,11 @@ export class ClientStatisticsService {
 
         const result = await this.clientStatisticsRepository.query(query, [address, clientName, sessionId]);
 
-        return result.map(res => {
+        const mapped = result.map(res => {
             res.label = new Date(res.label).toISOString();
             return res;
-        }).slice(0, result.length - 1);
+        });
+        return mapped.length > 1 ? mapped.slice(0, -1) : mapped;
 
     }
 

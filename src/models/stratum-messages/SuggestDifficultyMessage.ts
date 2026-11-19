@@ -1,9 +1,11 @@
 import { Expose, Transform } from 'class-transformer';
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsNumber } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsNumber, Min } from 'class-validator';
 
 import { eRequestMethod } from '../enums/eRequestMethod';
 import { eResponseMethod } from '../enums/eResponseMethod';
 import { StratumBaseMessage } from './StratumBaseMessage';
+
+const MIN_SUGGESTED_DIFFICULTY = 0.00001;
 
 export class SuggestDifficulty extends StratumBaseMessage {
     @IsArray()
@@ -16,6 +18,7 @@ export class SuggestDifficulty extends StratumBaseMessage {
 
     @Expose()
     @IsNumber()
+    @Min(MIN_SUGGESTED_DIFFICULTY)
     @Transform(({ value, key, obj, type }) => {
         return Number(obj.params[0]);
     })

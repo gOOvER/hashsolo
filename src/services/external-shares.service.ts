@@ -12,11 +12,14 @@ export class ExternalSharesService {
     private readonly configService: ConfigService,
     private readonly httpService: HttpService
   ) {
-    this.shareApiUrl = this.configService.get('SHARE_SUBMISSION_URL') || 'https://web.public-pool.io';
+    this.shareApiUrl = this.configService.get('SHARE_SUBMISSION_URL') || '';
     this.shareApiKey = this.configService.get('SHARE_SUBMISSION_API_KEY');
   }
 
   public submitShare(share: ExternalPoolShare): void {
+    if (!this.shareApiUrl) {
+      return;
+    }
     this.httpService.post(`${this.shareApiUrl}/api/share`, share, {
       headers: {
         'x-api-key': this.shareApiKey

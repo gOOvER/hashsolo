@@ -1,103 +1,88 @@
-## Description
+# HashSolo
 
-A Nestjs and Typescript Bitcoin stratum mining server.
+A hardened NestJS and TypeScript Bitcoin Solo Mining Pool (Stratum v1) running on **Node.js 26** with TypeORM (`better-sqlite3`).
 
 ## Installation
 
 ```bash
-$ npm install
+npm install
 ```
 
-create an new .env file in the root directory and configure it with the parameters in .env.example
+Create a `.env` file in the root directory and configure it using `.env.example`.
 
 ## Running the app
 
 ```bash
 # development
-$ npm run start
+npm run start
 
 # watch mode
-$ npm run start:dev
+npm run start:dev
 
 # production build
-$ npm run build
+npm run build
+npm run start:prod
 ```
 
-## Test
+## Test & Lint
 
 ```bash
-# unit tests
-$ npm run test
+# unit tests (Jest 30 + Node ESM)
+npm run test
 
 # test coverage
-$ npm run test:cov
+npm run test:cov
+
+# lint
+npm run lint
 ```
 
-## Web interface
+## Requirements
 
-See [public-pool-ui](https://github.com/benjamin-wilson/public-pool-ui)
+- **Node.js `26.0.0` or newer** (see `.nvmrc`)
+- **Bitcoin Core** with RPC enabled (`rpcallowip` configured) and optional ZMQ (`zmqpubrawblock`)
 
-## Deployment
-
-Install pm2 (https://pm2.keymetrics.io/)
+## Deployment (PM2 Cluster Mode)
 
 ```bash
-$ pm2 start dist/main.js
+pm2 start dist/main.js
 ```
 
-When running the worker app in PM2 cluster mode, start the PM2 daemon with OS-level
-connection scheduling. The environment variable must be present when the PM2 daemon
-starts, not only in the worker configuration.
+When running in PM2 cluster mode, start the PM2 daemon with OS-level connection scheduling:
 
 ```bash
-$ NODE_CLUSTER_SCHED_POLICY=none pm2 start ecosystem.config.js
+NODE_CLUSTER_SCHED_POLICY=none pm2 start ecosystem.config.js
 ```
 
-Cluster-mode connection dropping requires Node.js `22.12.0` or newer.
+`STRATUM_MAX_CONNECTIONS_PER_LISTENER` is enforced per worker and Stratum port (default `10000`).
 
-`STRATUM_MAX_CONNECTIONS_PER_LISTENER` is enforced per worker and Stratum port.
-Size it using the busiest port: `worker count * limit`. For example, 28 workers
-with the default limit of `10000` allow up to `280000` connections on one port.
+## HTTPS / TLS (`API_SECURE`)
+
+If `API_SECURE=true`, the API server reads TLS credentials from:
+- `secrets/key.pem`
+- `secrets/cert.pem`
+
+When running behind a reverse proxy (e.g. Dokploy / Traefik / Nginx / Caddy), keep `API_SECURE=false` and let the proxy terminate TLS.
 
 ## Docker
 
 Build container:
 
 ```bash
-$ docker build -t public-pool .
+docker build -t hashsolo .
 ```
 
 Run container:
 
 ```bash
-$ docker container run --name public-pool --rm -p 3333:3333 -p 3334:3334 -p 8332:8332 -v .env:/public-pool/.env public-pool
+docker container run --name hashsolo --rm -p 3333:3333 -p 3334:3334 -v $(pwd)/.env:/hashsolo/.env:ro -v hashsolo-db:/hashsolo/DB hashsolo
 ```
 
 ### Docker Compose
 
-Build container:
 ```bash
-$ docker compose build
+docker compose build
+docker compose up -d
 ```
 
-Run container:
-```bash
-$ docker compose up -d
-```
-
-The docker-compose binds to `127.0.0.1` by default. To expose the Stratum services on your server change:
-```diff
-    ports:
--      - "127.0.0.1:3333:3333/tcp"
--      - "127.0.0.1:3334:3334/tcp"
-+      - "3333"
-+      - "3334"
-```
-
-**note**: To successfully connect to the bitcoin RPC you will need to add
-
-```
-rpcallowip=172.16.0.0/12
-```
-
-to your bitcoin.conf.
+Note: To connect to Bitcoin Core RPC from Docker, add `rpcallowip=172.16.0.0/12` to `bitcoin.conf`.

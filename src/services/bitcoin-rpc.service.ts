@@ -81,9 +81,14 @@ export class BitcoinRpcService implements OnModuleInit {
     }
 
     private async listenForNewBlocks(sock: zmq.Subscriber) {
-        for await (const [topic, msg] of sock) {
-            console.log("New Block");
-            await this.pollMiningInfo();
+        try {
+            for await (const [topic, msg] of sock) {
+                console.log("New Block");
+                await this.pollMiningInfo();
+            }
+        } catch (e: any) {
+            console.error('ZMQ listener error, falling back to polling:', e?.message ?? e);
+            setInterval(this.pollMiningInfo.bind(this), 500);
         }
     }
 
@@ -97,16 +102,17 @@ export class BitcoinRpcService implements OnModuleInit {
     }
 
     private async waitForBlock(blockHeight: number): Promise<IBlockTemplate> {
-        while (true) {
+        const maxAttempts = 300; // 30 seconds
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
             await new Promise(r => setTimeout(r, 100));
 
             const block = await this.rpcBlockService.getBlock(blockHeight);
             if (block != null && block.data != null) {
                 console.log(`promise loop resolved, block height ${blockHeight}`);
-                return Promise.resolve(JSON.parse(block.data));
+                return JSON.parse(block.data);
             }
-            console.log(`promise loop, block height ${blockHeight}`);
         }
+        throw new Error(`Timed out waiting for block template at height ${blockHeight}`);
     }
 
     public async getBlockTemplate(blockHeight: number): Promise<IBlockTemplate> {
@@ -120,7 +126,7 @@ export class BitcoinRpcService implements OnModuleInit {
                 result = await this.loadBlockTemplate(blockHeight);
             }
             else if (completeBlock) {
-                return Promise.resolve(JSON.parse(block.data));
+                return JSON.parse(block.data);
             } else if (!completeBlock) {
                 if (process.env.NODE_APP_INSTANCE != null) {
                     // There is a unique constraint on the block height so if another process tries to lock, it'll throw
@@ -128,6 +134,8 @@ export class BitcoinRpcService implements OnModuleInit {
                         await this.rpcBlockService.lockBlock(blockHeight, process.env.NODE_APP_INSTANCE);
                     } catch (e) {
                         result = await this.waitForBlock(blockHeight);
+                        console.log(`getblocktemplate tx count: ${result.transactions.length}`);
+                        return result;
                     }
                 }
                 result = await this.loadBlockTemplate(blockHeight);
@@ -135,8 +143,8 @@ export class BitcoinRpcService implements OnModuleInit {
                 //wait for block
                 result = await this.waitForBlock(blockHeight);
             }
-        } catch (e) {
-            console.error('Error getblocktemplate:', e.message);
+        } catch (e: any) {
+            console.error('Error getblocktemplate:', e?.message ?? e);
             throw new Error('Error getblocktemplate');
         }
         console.log(`getblocktemplate tx count: ${result.transactions.length}`);
@@ -146,7 +154,8 @@ export class BitcoinRpcService implements OnModuleInit {
     private async loadBlockTemplate(blockHeight: number) {
 
         let blockTemplate: IBlockTemplate;
-        while (blockTemplate == null) {
+        const maxRetries = 5;
+        for (let attempt = 0; attempt < maxRetries && blockTemplate == null; attempt++) {
             blockTemplate = await this.callRpc<IBlockTemplate>('getblocktemplate', [
                 {
                     rules: ['segwit'],
@@ -154,8 +163,14 @@ export class BitcoinRpcService implements OnModuleInit {
                     capabilities: ['serverlist', 'proposal']
                 }
             ]);
+            if (blockTemplate == null && attempt < maxRetries - 1) {
+                await new Promise(r => setTimeout(r, 200));
+            }
         }
 
+        if (blockTemplate == null) {
+            throw new Error('getblocktemplate returned null');
+        }
 
         await this.rpcBlockService.saveBlock(blockHeight, JSON.stringify(blockTemplate));
 
@@ -165,15 +180,15 @@ export class BitcoinRpcService implements OnModuleInit {
     public async getMiningInfo(): Promise<IMiningInfo> {
         try {
             return await this.callRpc<IMiningInfo>('getmininginfo');
-        } catch (e) {
-            console.error('Error getmininginfo', e.message);
+        } catch (e: any) {
+            console.error('Error getmininginfo', e?.message ?? e);
             return null;
         }
 
     }
 
     public async SUBMIT_BLOCK(hexdata: string): Promise<string> {
-        let response: string = 'unknown';
+        let response = 'unknown';
         try {
             response = await this.callRpc<string>('submitblock', [hexdata]);
             if (response == null) {
@@ -182,8 +197,8 @@ export class BitcoinRpcService implements OnModuleInit {
             console.log(`BLOCK SUBMISSION RESPONSE: ${response}`);
             console.log(hexdata);
             console.log(JSON.stringify(response));
-        } catch (e) {
-            response = e;
+        } catch (e: any) {
+            response = e?.message ?? String(e);
             console.log(`BLOCK SUBMISSION RESPONSE ERROR: ${e}`);
         }
         return response;

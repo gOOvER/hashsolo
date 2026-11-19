@@ -6,8 +6,8 @@ const TARGET_SUBMISSION_PER_SECOND = 10;
 const MIN_DIFF = 0.00001;
 export class StratumV1ClientStatistics {
 
-    private shares: number = 0;
-    private acceptedCount: number = 0;
+    private shares = 0;
+    private acceptedCount = 0;
 
     private submissionCacheStart: Date;
     private submissionCache: { time: Date, difficulty: number }[] = [];
@@ -20,7 +20,7 @@ export class StratumV1ClientStatistics {
     private previousTimeSlotTime: Date;
     private currentTimeSlotTime: Date;
 
-    private previousShares: number = 0;
+    private previousShares = 0;
 
     constructor(
         private readonly clientStatisticsService: ClientStatisticsService
@@ -34,9 +34,9 @@ export class StratumV1ClientStatistics {
     public async addShares(client: ClientEntity, targetDifficulty: number) {
 
         // 10 min
-        var coeff = 1000 * 60 * 10;
-        var date = new Date();
-        var timeSlot = new Date(Math.floor(date.getTime() / coeff) * coeff).getTime();
+        const coeff = 1000 * 60 * 10;
+        const date = new Date();
+        const timeSlot = new Date(Math.floor(date.getTime() / coeff) * coeff).getTime();
 
         if (this.submissionCache.length > CACHE_SIZE) {
             this.submissionCache.shift();
@@ -108,10 +108,12 @@ export class StratumV1ClientStatistics {
             // saving to memory for storing later
             this.shares += targetDifficulty;
             this.acceptedCount++;
-			if(this.shares > 0) {
-            const time = new Date().getTime() - this.previousTimeSlotTime.getTime();
-            this.hashRate = ((this.previousShares + this.shares) * 4294967296) / (time / 1000);
-        }
+			if (this.shares > 0) {
+                const time = new Date().getTime() - this.previousTimeSlotTime.getTime();
+                if (time > 0) {
+                    this.hashRate = ((this.previousShares + this.shares) * 4294967296) / (time / 1000);
+                }
+            }
         }
 
     }
@@ -132,6 +134,9 @@ export class StratumV1ClientStatistics {
             return pre;
         }, 0);
         const diffSeconds = (this.submissionCache[this.submissionCache.length - 1].time.getTime() - this.submissionCache[0].time.getTime()) / 1000;
+        if (diffSeconds <= 0) {
+            return null;
+        }
 
         const difficultyPerSecond = sum / diffSeconds;
 
@@ -144,27 +149,15 @@ export class StratumV1ClientStatistics {
         return null;
     }
 
-    private nearestPowerOfTwo(val): number {
-        if (val === 0) {
+    private nearestPowerOfTwo(val: number): number | null {
+        if (!Number.isFinite(val) || val <= 0) {
             return null;
         }
         if (val < MIN_DIFF) {
             return MIN_DIFF;
         }
-        let x = val | (val >> 1);
-        x = x | (x >> 2);
-        x = x | (x >> 4);
-        x = x | (x >> 8);
-        x = x | (x >> 16);
-        x = x | (x >> 32);
-        const res = x - (x >> 1);
-        if (res == 0 && val * 100 < MIN_DIFF) {
-            return MIN_DIFF;
-        }
-        if (res == 0) {
-            return this.nearestPowerOfTwo(val * 100) / 100;
-        }
-        return res;
+        const res = Math.pow(2, Math.floor(Math.log2(val)));
+        return res < MIN_DIFF ? MIN_DIFF : res;
     }
 
 }

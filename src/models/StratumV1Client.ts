@@ -24,7 +24,7 @@ import { ConfigurationMessage } from './stratum-messages/ConfigurationMessage';
 import { MiningSubmitMessage } from './stratum-messages/MiningSubmitMessage';
 import { StratumErrorMessage } from './stratum-messages/StratumErrorMessage';
 import { SubscriptionMessage } from './stratum-messages/SubscriptionMessage';
-import { EXTRANONCE1_SIZE_BYTES } from './stratum.constants';
+import { EXTRANONCE1_SIZE_BYTES, EXTRANONCE2_SIZE_BYTES } from './stratum.constants';
 import { SuggestDifficulty } from './stratum-messages/SuggestDifficultyMessage';
 import { StratumV1ClientStatistics } from './StratumV1ClientStatistics';
 import { ExternalSharesService } from '../services/external-shares.service';
@@ -32,8 +32,16 @@ import { ExternalSharesService } from '../services/external-shares.service';
 const TRUE_DIFF_ONE = 2.695953529101131e67;
 const BLOCKED_USER_AGENT_LOG_INTERVAL_MS = 60 * 1000;
 const VALIDATION_ERROR_LOG_INTERVAL_MS = 60 * 1000;
+const MAX_BUFFER_BYTES = 16 * 1024;
+const MAX_LOG_STATE_ENTRIES = 1000;
+const VERSION_ROLLING_MASK = 0x1fffe000;
+const MIN_SESSION_DIFFICULTY = 0.00001;
+const EXTRANONCE2_HEX_REGEX = new RegExp(`^[0-9a-fA-F]{${EXTRANONCE2_SIZE_BYTES * 2}}$`);
+const HEX_8_REGEX = /^[0-9a-fA-F]{8}$/;
+const HEX_1_TO_8_REGEX = /^[0-9a-fA-F]{1,8}$/;
 
 export class StratumV1Client {
+    private static activeSessionIds = new Set<string>();
     private static blockedUserAgentLogState = new Map<string, { nextLogAt: number, suppressed: number }>();
     private static validationErrorLogState = new Map<string, { nextLogAt: number, suppressed: number, sample: string }>();
 
@@ -47,7 +55,7 @@ export class StratumV1Client {
     private statistics: StratumV1ClientStatistics;
     private stratumInitialized = false;
     private usedSuggestedDifficulty = false;
-    private sessionDifficulty: number = 100000;
+    private sessionDifficulty = 100000;
 
     private entity: ClientEntity;
     private creatingEntity: Promise<void>;
@@ -55,9 +63,10 @@ export class StratumV1Client {
     public extraNonceAndSessionId: string;
     public sessionStart: Date;
     public noFee: boolean;
-    public hashRate: number = 0;
+    public hashRate = 0;
 
-    private buffer: string = '';
+    private buffer = '';
+    private messageQueue: Promise<void> = Promise.resolve();
     private connectionClosed = false;
     private lastSentMiningJobTimestamp: number = null;
 
@@ -77,12 +86,25 @@ export class StratumV1Client {
     ) {
 
         this.socket.on('data', (data: Buffer) => {
+            if (this.connectionClosed || this.socket.destroyed || this.socket.writableEnded) {
+                return;
+            }
+            if (this.buffer.length + data.length > MAX_BUFFER_BYTES) {
+                console.warn(`Closing socket due to buffer overflow (${this.extraNonceAndSessionId ?? this.socket.remoteAddress})`);
+                this.closeSocket();
+                return;
+            }
             this.buffer += data.toString();
-            let lines = this.buffer.split('\n');
+            const lines = this.buffer.split('\n');
             this.buffer = lines.pop() || ''; // Save the last part of the data (incomplete line) to the buffer
 
-            (async () => {
-                for (const m of lines.filter(l => l.length > 0)) {
+            const nonEmptyLines = lines.filter(l => l.length > 0);
+            if (nonEmptyLines.length === 0) {
+                return;
+            }
+
+            this.messageQueue = this.messageQueue.then(async () => {
+                for (const m of nonEmptyLines) {
                     if (this.connectionClosed || this.socket.destroyed || this.socket.writableEnded) {
                         break;
                     }
@@ -93,7 +115,7 @@ export class StratumV1Client {
                         console.error(e);
                     }
                 }
-            })();
+            });
         });
 
 
@@ -102,6 +124,7 @@ export class StratumV1Client {
     public async destroy() {
 
         if (this.extraNonceAndSessionId) {
+            StratumV1Client.activeSessionIds.delete(this.extraNonceAndSessionId);
             await this.clientService.delete(this.extraNonceAndSessionId);
         }
 
@@ -115,8 +138,16 @@ export class StratumV1Client {
     }
 
     private getRandomHexString() {
-        const randomBytes = crypto.randomBytes(EXTRANONCE1_SIZE_BYTES);
-        return randomBytes.toString('hex');
+        for (let attempt = 0; attempt < 10; attempt++) {
+            const candidate = crypto.randomBytes(EXTRANONCE1_SIZE_BYTES).toString('hex');
+            if (!StratumV1Client.activeSessionIds.has(candidate)) {
+                StratumV1Client.activeSessionIds.add(candidate);
+                return candidate;
+            }
+        }
+        const fallback = crypto.randomBytes(EXTRANONCE1_SIZE_BYTES).toString('hex');
+        StratumV1Client.activeSessionIds.add(fallback);
+        return fallback;
     }
 
 
@@ -129,6 +160,11 @@ export class StratumV1Client {
             parsedMessage = JSON.parse(message);
         } catch (e) {
             //console.log("Invalid JSON");
+            await this.socket.end();
+            return;
+        }
+
+        if (parsedMessage == null || typeof parsedMessage !== 'object' || Array.isArray(parsedMessage)) {
             await this.socket.end();
             return;
         }
@@ -278,7 +314,7 @@ export class StratumV1Client {
 
                 const errors = await validate(suggestDifficultyMessage, validatorOptions);
 
-                if (errors.length === 0) {
+                if (errors.length === 0 && Number.isFinite(suggestDifficultyMessage.suggestedDifficulty) && suggestDifficultyMessage.suggestedDifficulty >= MIN_SESSION_DIFFICULTY) {
 
                     this.clientSuggestedDifficulty = suggestDifficultyMessage;
                     this.sessionDifficulty = suggestDifficultyMessage.suggestedDifficulty;
@@ -311,17 +347,7 @@ export class StratumV1Client {
                 }
 
 
-                const miningSubmitMessage = plainToInstance(
-                    MiningSubmitMessage,
-                    parsedMessage,
-                );
-
-                const validatorOptions: ValidatorOptions = {
-                    whitelist: true,
-                    //forbidNonWhitelisted: true,
-                };
-
-                const errors = await validate(miningSubmitMessage, validatorOptions);
+                const { message: miningSubmitMessage, errors } = this.parseAndValidateMiningSubmit(parsedMessage);
 
                 if (errors.length === 0 && this.stratumInitialized == true) {
                     const result = await this.handleMiningSubmission(miningSubmitMessage);
@@ -336,7 +362,7 @@ export class StratumV1Client {
                 } else {
                     this.logValidationError('Mining Submit validation error', errors);
                     const err = new StratumErrorMessage(
-                        miningSubmitMessage.id,
+                        parsedMessage.id,
                         eStratumErrorCode.OtherUnknown,
                         'Mining Submit validation error',
                         errors).response();
@@ -391,15 +417,21 @@ export class StratumV1Client {
             }
         }
 
-        this.stratumSubscription = this.stratumV1JobsService.newMiningJob$.subscribe(async (jobTemplate) => {
-            try {
-                if(jobTemplate.blockData.clearJobs){
-                    this.miningSubmissionHashes.clear();
+        this.stratumSubscription = this.stratumV1JobsService.newMiningJob$.subscribe({
+            next: async (jobTemplate) => {
+                try {
+                    if (jobTemplate.blockData.clearJobs) {
+                        this.miningSubmissionHashes.clear();
+                    }
+                    await this.sendNewMiningJob(jobTemplate);
+                } catch (e) {
+                    await this.socket.end();
+                    console.error(e);
                 }
-                await this.sendNewMiningJob(jobTemplate);
-            } catch (e) {
+            },
+            error: async (err) => {
+                console.error('Mining job stream error:', err?.message ?? err);
                 await this.socket.end();
-                console.error(e);
             }
         });
 
@@ -453,6 +485,7 @@ export class StratumV1Client {
             payoutInformation,
             jobTemplate
         );
+        job.ownerSessionId = this.extraNonceAndSessionId;
 
         this.stratumV1JobsService.addJob(job);
 
@@ -495,7 +528,7 @@ export class StratumV1Client {
         const job = this.stratumV1JobsService.getJobById(submission.jobId);
 
         // a miner may submit a job that doesn't exist anymore if it was removed by a new block notification (or expired, 5 min)
-        if (job == null) {
+        if (job == null || (job.ownerSessionId != null && job.ownerSessionId !== this.extraNonceAndSessionId)) {
             const err = new StratumErrorMessage(
                 submission.id,
                 eStratumErrorCode.JobNotFound,
@@ -544,6 +577,14 @@ export class StratumV1Client {
         }
 
         const versionMask = parseInt(submission.versionMask, 16);
+        if ((versionMask & ~VERSION_ROLLING_MASK) !== 0) {
+            const err = new StratumErrorMessage(
+                submission.id,
+                eStratumErrorCode.OtherUnknown,
+                'Invalid version mask').response();
+            await this.write(err);
+            return false;
+        }
         const nonce = parseInt(submission.nonce, 16);
         const timestamp = parseInt(submission.ntime, 16);
 
@@ -588,7 +629,7 @@ export class StratumV1Client {
 
                 await this.notificationService.notifySubscribersBlockFound(this.clientAuthorization.address, jobTemplate.blockData.height, updatedJobBlock, result);
                 //success
-                if (result == null) {
+                if (result == null || result === 'SUCCESS!') {
                     await this.addressSettingsService.resetBestDifficultyAndShares();
                 }
             }
@@ -622,7 +663,7 @@ export class StratumV1Client {
                     address: this.clientAuthorization.address,
                     userAgent: this.clientSubscription.userAgent,
                     header: header.toString('hex'),
-                    externalPoolName: this.configService.get('POOL_IDENTIFIER') || 'Public-Pool'
+                    externalPoolName: this.configService.get('POOL_IDENTIFIER') || 'HashSolo'
                 });
             }
 
@@ -662,7 +703,10 @@ export class StratumV1Client {
             }) + '\n';
 
 
-            await this.socket.write(data);
+            const success = await this.write(data);
+            if (!success) {
+                return;
+            }
 
             const jobTemplate = await firstValueFrom(this.stratumV1JobsService.newMiningJob$);
             const nextTimestamp = Math.max(
@@ -686,7 +730,7 @@ export class StratumV1Client {
 
     private calculateDifficulty(header: Buffer): { submissionDifficulty: number, submissionHash: string } {
 
-        const hashResult = bitcoinjs.crypto.hash256(header);
+        const hashResult = Buffer.from(bitcoinjs.crypto.hash256(header));
 
         const target = this.le256todouble(hashResult);
         const submissionDifficulty = target === 0 ? Number.POSITIVE_INFINITY : TRUE_DIFF_ONE / target;
@@ -730,6 +774,9 @@ export class StratumV1Client {
         const suppressed = logState?.suppressed ?? 0;
         const suffix = suppressed > 0 ? ` (${suppressed} similar connections suppressed)` : '';
         console.log(`Blocked non-compliant connection from userAgent: ${userAgent}${suffix}`);
+        if (StratumV1Client.blockedUserAgentLogState.size >= MAX_LOG_STATE_ENTRIES) {
+            StratumV1Client.blockedUserAgentLogState.clear();
+        }
         StratumV1Client.blockedUserAgentLogState.set(userAgent, {
             nextLogAt: now + BLOCKED_USER_AGENT_LOG_INTERVAL_MS,
             suppressed: 0
@@ -751,6 +798,9 @@ export class StratumV1Client {
         const suppressed = logState?.suppressed ?? 0;
         const suffix = suppressed > 0 ? ` (${suppressed} similar validation errors suppressed)` : '';
         console.warn(`${label}: ${signature}${sample}${suffix}`);
+        if (StratumV1Client.validationErrorLogState.size >= MAX_LOG_STATE_ENTRIES) {
+            StratumV1Client.validationErrorLogState.clear();
+        }
         StratumV1Client.validationErrorLogState.set(key, {
             nextLogAt: now + VALIDATION_ERROR_LOG_INTERVAL_MS,
             suppressed: 0,
@@ -780,6 +830,64 @@ export class StratumV1Client {
         }
 
         return ` sample=${values.join(',')}`;
+    }
+
+    private parseAndValidateMiningSubmit(parsedMessage: any): { message: MiningSubmitMessage | null, errors: ValidationError[] } {
+        const errors: ValidationError[] = [];
+        const addError = (property: string, value: unknown, constraint: string) => {
+            const err = new ValidationError();
+            err.property = property;
+            err.value = value;
+            err.constraints = { [constraint]: `${property} is invalid` };
+            errors.push(err);
+        };
+
+        if (typeof parsedMessage.id !== 'number' && typeof parsedMessage.id !== 'string') {
+            addError('id', parsedMessage.id, 'isValidId');
+        }
+
+        const params = parsedMessage.params;
+        if (!Array.isArray(params) || params.length < 5 || params.length > 6) {
+            addError('params', params, 'isArray');
+            return { message: null, errors };
+        }
+
+        const [userId, jobId, extraNonce2, ntime, nonce, rawVersionMask] = params;
+        const versionMask = rawVersionMask == null ? '0' : rawVersionMask;
+
+        if (typeof userId !== 'string') addError('userId', userId, 'isString');
+        if (typeof jobId !== 'string') addError('jobId', jobId, 'isString');
+        if (typeof extraNonce2 !== 'string') {
+            addError('extraNonce2', extraNonce2, 'isString');
+        } else if (extraNonce2.length !== EXTRANONCE2_SIZE_BYTES * 2) {
+            addError('extraNonce2', extraNonce2, 'isLength');
+        } else if (!EXTRANONCE2_HEX_REGEX.test(extraNonce2)) {
+            addError('extraNonce2', extraNonce2, 'isHex');
+        }
+        if (typeof ntime !== 'string' || !HEX_8_REGEX.test(ntime)) {
+            addError('ntime', ntime, 'isHex');
+        }
+        if (typeof nonce !== 'string' || !HEX_8_REGEX.test(nonce)) {
+            addError('nonce', nonce, 'isHex');
+        }
+        if (typeof versionMask !== 'string' || !HEX_1_TO_8_REGEX.test(versionMask)) {
+            addError('versionMask', versionMask, 'isHex');
+        }
+
+        if (errors.length > 0) {
+            return { message: null, errors };
+        }
+
+        const msg = new MiningSubmitMessage();
+        msg.id = parsedMessage.id;
+        msg.params = params;
+        msg.userId = userId;
+        msg.jobId = jobId;
+        msg.extraNonce2 = extraNonce2;
+        msg.ntime = ntime;
+        msg.nonce = nonce;
+        msg.versionMask = versionMask;
+        return { message: msg, errors };
     }
 
     private closeSocket() {

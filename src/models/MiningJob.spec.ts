@@ -98,7 +98,7 @@ describe('MiningJob', () => {
         });
 
         it('should create a new MiningJob if POOL_IDENTIFIER is not set and use the default', () => {
-            const expectedMiningIdentifier = 'Public-Pool';
+            const expectedMiningIdentifier = 'HashSolo';
             expect(jobTemplate.block).toBeDefined();
             const miningJob = new MiningJob(configService, bitcoinjs.networks.testnet, '1', payoutInformation, jobTemplate);
 
@@ -106,7 +106,7 @@ describe('MiningJob', () => {
 
             const miningIdentifier = extractPoolIdentifierFromScript(response.params[2]);
             expect(miningIdentifier).toBe(expectedMiningIdentifier);
-            expect(console.warn).not.toBeCalled();
+            expect(console.warn).not.toHaveBeenCalled();
         });
 
         it('should use the POOL_IDENTIFIER if it doesn\'t make the script size too big', () => {
@@ -124,7 +124,7 @@ describe('MiningJob', () => {
 
             const miningIdentifier = extractPoolIdentifierFromScript(response.params[2]);
             expect(miningIdentifier).toBe(expectedMiningIdentifier);
-            expect(console.warn).not.toBeCalled();
+            expect(console.warn).not.toHaveBeenCalled();
 
         });
 
@@ -142,7 +142,7 @@ describe('MiningJob', () => {
             const response = JSON.parse(miningJob.response(jobTemplate));
 
             const miningIdentifier = extractPoolIdentifierFromScript(response.params[2]);
-            expect(console.warn).toBeCalledWith('Block weight exceeds the maximum allowed weight, removing the pool identifier');
+            expect(console.warn).toHaveBeenCalledWith('Block weight exceeds the maximum allowed weight, removing the pool identifier');
             expect(miningIdentifier).toBe(expectedMiningIdentifier);
         });
 
@@ -162,7 +162,7 @@ describe('MiningJob', () => {
 
             const miningIdentifier = extractPoolIdentifierFromScript(response.params[2]);
             expect(miningIdentifier).toBe(expectedMiningIdentifier);
-            expect(console.warn).not.toBeCalled();
+            expect(console.warn).not.toHaveBeenCalled();
         });
 
         it('should remove pool identifier if script is too big with identifier', () => {
@@ -179,7 +179,7 @@ describe('MiningJob', () => {
             const response = JSON.parse(miningJob.response(jobTemplate));
 
             const miningIdentifier = extractPoolIdentifierFromScript(response.params[2]);
-            expect(console.warn).toBeCalledWith('Pool identifier is too long, removing the pool identifier');
+            expect(console.warn).toHaveBeenCalledWith('Pool identifier is too long, removing the pool identifier');
             expect(miningIdentifier).toBe(expectedMiningIdentifier);
         });
     });
@@ -226,8 +226,8 @@ describe('MiningJob', () => {
             const coinbase = bitcoinjs.Transaction.fromHex(`${coinbasePart1}${extraNonce1}${extraNonce2}${coinbasePart2}`);
 
             expect(Buffer.byteLength(extraNonce1 + extraNonce2, 'hex')).toBe(12);
-            expect(coinbase.ins[0].script.toString('hex')).toContain(`${extraNonce1}${extraNonce2}`);
-            expect(coinbase.ins[0].script.toString('hex').endsWith(`${extraNonce1}${extraNonce2}`)).toBe(true);
+            expect(Buffer.from(coinbase.ins[0].script).toString('hex')).toContain(`${extraNonce1}${extraNonce2}`);
+            expect(Buffer.from(coinbase.ins[0].script).toString('hex').endsWith(`${extraNonce1}${extraNonce2}`)).toBe(true);
         });
 
         it('should update block nonce, timestamp, version mask, and coinbase script', () => {
@@ -248,8 +248,8 @@ describe('MiningJob', () => {
             expect(updatedBlock.nonce).toBe(parseInt('ed460d91', 16));
             expect(updatedBlock.timestamp).toBe(timestamp);
             expect(updatedBlock.version).toBe(jobTemplate.block.version ^ parseInt('00002000', 16));
-            expect(updatedBlock.transactions[0].ins[0].script.toString('hex').endsWith(`${extraNonce1}${extraNonce2}`)).toBe(true);
-            expect(updatedBlock.merkleRoot.equals(originalMerkleRoot)).toBe(false);
+            expect(Buffer.from(updatedBlock.transactions[0].ins[0].script).toString('hex').endsWith(`${extraNonce1}${extraNonce2}`)).toBe(true);
+            expect(Buffer.from(updatedBlock.merkleRoot).equals(originalMerkleRoot)).toBe(false);
         });
 
         it('should leave block version unchanged without a version mask', () => {
