@@ -5,7 +5,7 @@ labels: ["bug"]
 body:
   - type: markdown
     attributes:
-      value: Thanks for helping harden **HashSolo**! Please share as much detail as possible so we can reproduce and fix the issue quickly.
+      value: Thanks for helping harden **HashSolo**! Please share as much detail as possible so the issue can be reproduced and fixed quickly.
   - type: dropdown
     id: component
     attributes:

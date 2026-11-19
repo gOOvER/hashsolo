@@ -17,17 +17,17 @@
 
 ## 🤝 Contribute & Help Keep Solo Mining Alive!
 
-The original [`benjamin-wilson/public-pool`](https://github.com/benjamin-wilson/public-pool) is an awesome project, and we genuinely love this kind of decentralized, hobbyist-friendly Bitcoin solo mining — from tiny ESP32 miners to full ASICs.
+The original [`benjamin-wilson/public-pool`](https://github.com/benjamin-wilson/public-pool) is an awesome project for decentralized, hobbyist-friendly Bitcoin solo mining — from tiny ESP32 miners to full ASICs.
 
 Because upstream has become largely unmaintained with outdated dependencies and unpatched security issues, **HashSolo** exists to actively carry that torch forward: **modern, fast, and hardened without known CVEs.**
 
 **Pull Requests, bug fixes, security improvements, miner compatibility reports, and feature ideas are warmly welcome!**
-- 🐛 Found a bug or miner quirk? Open an issue via our [Issue Templates](https://github.com/gOOvER/hashsolo/issues/new/choose).
+- 🐛 Found a bug or miner quirk? Open an issue via the [Issue Templates](https://github.com/gOOvER/hashsolo/issues/new/choose).
 - 🔧 Want to contribute code? Fork the repo, pick an improvement, and open a [Pull Request](https://github.com/gOOvER/hashsolo/pulls) — every PR is appreciated and reviewed promptly.
 
 > [!IMPORTANT]
 > ### ⚡ Mine Live Now on **[hashsolo.goover.dev](https://hashsolo.goover.dev)**!
-> Want to solo-mine Bitcoin right away without running your own node? Point your **Bitaxe**, **NerdMiner**, **NMMiner**, **Antminer**, or **ASIC** straight to our public instance:
+> Want to solo-mine Bitcoin right away without running a local node? Point a **Bitaxe**, **NerdMiner**, **NMMiner**, **Antminer**, or **ASIC** straight to the public instance:
 > - **Web Dashboard:** [https://hashsolo.goover.dev](https://hashsolo.goover.dev)
 > - **Stratum V1 URL:** `stratum+tcp://hashsolo.goover.dev:3333` (Password: `x`)
 > - **Built for Everyone:** `STRATUM_START_DIFF=0.001` (ideal for KH/s & MH/s ESP miners as well as TH/s ASICs), **0% fee** below 50 TH/s, live node sync & reward stats, and instant **Telegram / ntfy** alerts.
