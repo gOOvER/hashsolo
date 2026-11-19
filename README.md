@@ -1,8 +1,35 @@
 # HashSolo
 
+> **Fork Notice:** HashSolo is an actively maintained, hardened fork of [`benjamin-wilson/public-pool`](https://github.com/benjamin-wilson/public-pool).
+> For a ready-to-run **Dokploy** stack (including Bitcoin Core, HashSolo backend, and HashSolo UI), see **[gOOvER/hashsolo-dokploy](https://github.com/gOOvER/hashsolo-dokploy)**.
+
 A hardened NestJS and TypeScript Bitcoin Solo Mining Pool (Stratum v1) running on **Node.js 26** with TypeORM (`better-sqlite3`).
 
-## Installation
+## Related Repositories
+
+- **Backend (this repo):** [`gOOvER/hashsolo`](https://github.com/gOOvER/hashsolo) (`ghcr.io/goover/hashsolo:latest`)
+- **Web Dashboard:** [`gOOvER/hashsolo-ui`](https://github.com/gOOvER/hashsolo-ui) (`ghcr.io/goover/hashsolo-ui:latest`)
+- **Dokploy Compose Stack (Recommended):** [`gOOvER/hashsolo-dokploy`](https://github.com/gOOvER/hashsolo-dokploy)
+
+## Key Improvements in This Fork
+
+- **Modern Runtime & Stack:** Node.js `26`, NestJS `12`, TypeORM `1.x` (`better-sqlite3`), `bitcoinjs-lib` `7`, TypeScript `6`, Jest `30`, ESLint `10`.
+- **Live Bitcoin Node Status:** Added `GET /api/node/status` (`getblockchaininfo`) reporting live sync progress, blocks/headers, pruning, and disk usage to the UI.
+- **Dynamic Fee Reporting:** `/api/info` and `/api/pool` dynamically expose `fee` (`1.5` when `DEV_FEE_ADDRESS` is set for miners `>= 50 TH/s`, `0` otherwise).
+- **Performance & Security Hardening:**
+  - Non-root Docker image (`node` user), configurable `CORS_ORIGIN`, graceful shutdown hooks.
+  - Synchronous `mining.submit` parser/validator on the Stratum hot path and pre-cached Merkle branches.
+  - SQLite `PRAGMA synchronous = NORMAL` with WAL mode and composite statistics indexes.
+  - TCP buffer overflow protection and per-listener `STRATUM_MAX_CONNECTIONS_PER_LISTENER`.
+
+## Dokploy Deployment (Recommended)
+
+The easiest way to deploy HashSolo in production is with **[gOOvER/hashsolo-dokploy](https://github.com/gOOvER/hashsolo-dokploy)**:
+- Includes `bitcoind` (`bitcoin/bitcoin:latest`, pruned by default via `BITCOIN_PRUNE=550`), `hashsolo`, and `hashsolo-ui` in one Compose stack.
+- Uses `pull_policy: always` with prebuilt `linux/amd64` GHCR images.
+- Routes `/api/*` internally via Caddy so only one domain is needed in Dokploy.
+
+## Installation (Local / Manual)
 
 ```bash
 npm install
@@ -51,7 +78,7 @@ pm2 start dist/main.js
 When running in PM2 cluster mode, start the PM2 daemon with OS-level connection scheduling:
 
 ```bash
-NODE_CLUSTER_SCHED_POLICY=none pm2 start ecosystem.config.js
+NODE_CLUSTER_SCHEDPOLICY=none pm2 start ecosystem.config.js
 ```
 
 `STRATUM_MAX_CONNECTIONS_PER_LISTENER` is enforced per worker and Stratum port (default `10000`).
@@ -77,12 +104,3 @@ Run container:
 ```bash
 docker container run --name hashsolo --rm -p 3333:3333 -p 3334:3334 -v $(pwd)/.env:/hashsolo/.env:ro -v hashsolo-db:/hashsolo/DB hashsolo
 ```
-
-### Docker Compose
-
-```bash
-docker compose build
-docker compose up -d
-```
-
-Note: To connect to Bitcoin Core RPC from Docker, add `rpcallowip=172.16.0.0/12` to `bitcoin.conf`.
