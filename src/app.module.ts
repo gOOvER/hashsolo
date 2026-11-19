@@ -19,6 +19,7 @@ import { AppService } from './services/app.service';
 import { BitcoinRpcService } from './services/bitcoin-rpc.service';
 import { DiscordService } from './services/discord.service';
 import { NotificationService } from './services/notification.service';
+import { NtfyService } from './services/ntfy.service';
 import { StratumV1JobsService } from './services/stratum-v1-jobs.service';
 import { StratumV1Service } from './services/stratum-v1.service';
 import { TelegramService } from './services/telegram.service';
@@ -66,6 +67,7 @@ const ORMModules = [
         TelegramService,
         BitcoinRpcService,
         NotificationService,
+        NtfyService,
         BitcoinAddressValidator,
         StratumV1JobsService,
         ExternalSharesService,

@@ -159,7 +159,9 @@ describe('StratumV1Client', () => {
 
         const addressSettings = moduleRef.get<AddressSettingsService>(AddressSettingsService);
         notificationService = {
-            notifySubscribersBlockFound: jest.fn().mockResolvedValue(undefined)
+            notifySubscribersBlockFound: jest.fn().mockResolvedValue(undefined),
+            notifySubscribersBestDifficulty: jest.fn().mockResolvedValue(undefined),
+            notifyWorkerStatus: jest.fn().mockResolvedValue(undefined)
         } as any;
         blocksService = {
             save: jest.fn().mockResolvedValue(undefined)

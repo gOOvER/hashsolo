@@ -1,5 +1,5 @@
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Controller, Get, Inject } from '@nestjs/common';
+import { Controller, Get, Header, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cache } from 'cache-manager';
 import { firstValueFrom } from 'rxjs';
@@ -144,6 +144,60 @@ export class AppController {
     // 3s short cache to protect RPC while keeping live UI updates responsive
     await this.cacheManager.set(CACHE_KEY, status, 3000);
     return status;
+  }
+
+  @Get('metrics')
+  @Header('Content-Type', 'text/plain; version=0.0.4; charset=utf-8')
+  public async metrics(): Promise<string> {
+    const [userAgents, blocksFound, nodeInfo, networkInfo] = await Promise.all([
+      this.clientService.getUserAgents(),
+      this.blocksService.getFoundBlocks(),
+      this.bitcoinRpcService.getBlockchainInfo(),
+      this.bitcoinRpcService.getNetworkInfo()
+    ]);
+
+    const totalHashRate = userAgents.reduce((acc, ua) => acc + (parseFloat(ua.totalHashRate) || 0), 0);
+    const totalMiners = userAgents.reduce((acc, ua) => acc + (parseInt(ua.count, 10) || 0), 0);
+    const uptimeSeconds = Math.floor((Date.now() - this.uptime.getTime()) / 1000);
+    const reward = this.bitcoinRpcService.getNextBlockReward();
+
+    const lines = [
+      '# HELP hashsolo_uptime_seconds Pool uptime in seconds',
+      '# TYPE hashsolo_uptime_seconds gauge',
+      `hashsolo_uptime_seconds ${uptimeSeconds}`,
+      '# HELP hashsolo_miners_connected Currently connected miner workers',
+      '# TYPE hashsolo_miners_connected gauge',
+      `hashsolo_miners_connected ${totalMiners}`,
+      '# HELP hashsolo_pool_hashrate_hs Total pool hashrate in H/s',
+      '# TYPE hashsolo_pool_hashrate_hs gauge',
+      `hashsolo_pool_hashrate_hs ${totalHashRate}`,
+      '# HELP hashsolo_blocks_found_total Total blocks found by the pool',
+      '# TYPE hashsolo_blocks_found_total counter',
+      `hashsolo_blocks_found_total ${blocksFound.length}`,
+      '# HELP hashsolo_bitcoin_node_reachable Whether bitcoind RPC is reachable (1=yes, 0=no)',
+      '# TYPE hashsolo_bitcoin_node_reachable gauge',
+      `hashsolo_bitcoin_node_reachable ${nodeInfo ? 1 : 0}`,
+      '# HELP hashsolo_bitcoin_node_ready Whether bitcoind has completed IBD (1=yes, 0=no)',
+      '# TYPE hashsolo_bitcoin_node_ready gauge',
+      `hashsolo_bitcoin_node_ready ${nodeInfo && !nodeInfo.initialblockdownload && nodeInfo.blocks > 0 ? 1 : 0}`,
+      '# HELP hashsolo_bitcoin_node_blocks Current synced block height',
+      '# TYPE hashsolo_bitcoin_node_blocks gauge',
+      `hashsolo_bitcoin_node_blocks ${nodeInfo?.blocks ?? 0}`,
+      '# HELP hashsolo_bitcoin_node_headers Known header height',
+      '# TYPE hashsolo_bitcoin_node_headers gauge',
+      `hashsolo_bitcoin_node_headers ${nodeInfo?.headers ?? 0}`,
+      '# HELP hashsolo_bitcoin_node_verification_progress Verification progress ratio (0..1)',
+      '# TYPE hashsolo_bitcoin_node_verification_progress gauge',
+      `hashsolo_bitcoin_node_verification_progress ${nodeInfo?.verificationprogress ?? 0}`,
+      '# HELP hashsolo_bitcoin_node_connections Connected Bitcoin P2P peers',
+      '# TYPE hashsolo_bitcoin_node_connections gauge',
+      `hashsolo_bitcoin_node_connections ${networkInfo?.connections ?? 0}`,
+      '# HELP hashsolo_next_block_reward_sats Next block coinbase reward in satoshis',
+      '# TYPE hashsolo_next_block_reward_sats gauge',
+      `hashsolo_next_block_reward_sats ${reward?.rewardSats ?? 0}`
+    ];
+
+    return `${lines.join('\n')}\n`;
   }
 
   private getPoolFeePercent(): number {

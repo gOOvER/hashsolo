@@ -54,6 +54,37 @@ export class TelegramService implements OnModuleInit {
         }));
     }
 
+    public async notifySubscribersBestDifficulty(address: string, worker: string, difficulty: number, userAgent?: string) {
+        if (this.bot == null) {
+            return;
+        }
+
+        const subscribers = await this.telegramSubscriptionsService.getSubscriptions(address);
+        const device = userAgent ? ` (${userAgent})` : '';
+        await Promise.all(subscribers.map(subscriber => {
+            return this.sendMessage(
+                subscriber.telegramChatId,
+                `New Best Difficulty for ${worker}${device}: ${difficulty.toLocaleString('en-US', { maximumFractionDigits: 2 })}`
+            );
+        }));
+    }
+
+    public async notifyWorkerStatus(address: string, worker: string, status: 'online' | 'offline', userAgent?: string) {
+        if (this.bot == null) {
+            return;
+        }
+
+        const subscribers = await this.telegramSubscriptionsService.getSubscriptions(address);
+        const device = userAgent ? ` (${userAgent})` : '';
+        const icon = status === 'online' ? '🟢' : '🔴';
+        await Promise.all(subscribers.map(subscriber => {
+            return this.sendMessage(
+                subscriber.telegramChatId,
+                `${icon} Worker ${worker}${device} is now ${status}.`
+            );
+        }));
+    }
+
     private async pollUpdates() {
         try {
             const response = await this.bot.get('getUpdates', {

@@ -128,6 +128,15 @@ export class StratumV1Client {
             await this.clientService.delete(this.extraNonceAndSessionId);
         }
 
+        if (this.clientAuthorization?.address) {
+            void this.notificationService.notifyWorkerStatus(
+                this.clientAuthorization.address,
+                this.clientAuthorization.worker,
+                'offline',
+                this.clientSubscription?.userAgent
+            );
+        }
+
         if (this.stratumSubscription != null) {
             this.stratumSubscription.unsubscribe();
         }
@@ -281,6 +290,12 @@ export class StratumV1Client {
                     if (!success) {
                         return;
                     }
+                    void this.notificationService.notifyWorkerStatus(
+                        this.clientAuthorization.address,
+                        this.clientAuthorization.worker,
+                        'online',
+                        this.clientSubscription?.userAgent
+                    );
                 } else {
                     console.error('Authorization validation error');
                     const err = new StratumErrorMessage(
@@ -647,6 +662,12 @@ export class StratumV1Client {
                 await this.clientService.updateBestDifficultyIfHigher(this.extraNonceAndSessionId, submissionDifficulty);
                 this.entity.bestDifficulty = submissionDifficulty;
                 await this.addressSettingsService.updateBestDifficultyIfHigher(this.clientAuthorization.address, submissionDifficulty, this.entity.userAgent);
+                void this.notificationService.notifySubscribersBestDifficulty(
+                    this.clientAuthorization.address,
+                    this.clientAuthorization.worker,
+                    submissionDifficulty,
+                    this.entity.userAgent
+                );
             }
 
 
