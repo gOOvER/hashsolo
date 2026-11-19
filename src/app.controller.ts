@@ -1,5 +1,6 @@
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Controller, Get, Inject } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Cache } from 'cache-manager';
 import { firstValueFrom } from 'rxjs';
 
@@ -16,6 +17,7 @@ export class AppController {
 
   constructor(
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+    private readonly configService: ConfigService,
     private readonly clientService: ClientService,
     private readonly clientStatisticsService: ClientStatisticsService,
     private readonly blocksService: BlocksService,
@@ -43,7 +45,8 @@ export class AppController {
       blockData,
       userAgents,
       highScores,
-      uptime: this.uptime
+      uptime: this.uptime,
+      fee: this.getPoolFeePercent()
     };
 
     //1 min
@@ -75,7 +78,7 @@ export class AppController {
       blockHeight,
       totalMiners,
       blocksFound,
-      fee: 0
+      fee: this.getPoolFeePercent()
     }
 
     //5 min
@@ -126,6 +129,11 @@ export class AppController {
     // 3s short cache to protect RPC while keeping live UI updates responsive
     await this.cacheManager.set(CACHE_KEY, status, 3000);
     return status;
+  }
+
+  private getPoolFeePercent(): number {
+    const devFeeAddress = this.configService.get<string>('DEV_FEE_ADDRESS')?.trim();
+    return devFeeAddress && devFeeAddress.length > 0 ? 1.5 : 0;
   }
 
   @Get('info/chart')
