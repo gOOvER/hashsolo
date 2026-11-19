@@ -136,13 +136,15 @@ export class StratumV1JobsService {
                     }
                 }
 
-                const merkleTree = merkleFn(txHashes, bitcoinjs.crypto.hash256);
-                const merkleBranches: Buffer[] = merkleProofFn(merkleTree, txHashes[0]).filter(h => h != null);
+                const merkleTree = merkleFn(txHashes, (buf: Uint8Array) => Buffer.from(bitcoinjs.crypto.hash256(buf)));
+                const merkleBranches: Buffer[] = merkleProofFn(merkleTree, txHashes[0])
+                    .filter((h): h is Uint8Array => h != null)
+                    .map(h => Buffer.from(h));
                 block.merkleRoot = merkleBranches.pop();
 
                 // remove the first (coinbase) and last (root) element from the branch
                 const merkleBranchBuffers = merkleBranches.slice(1, merkleBranches.length);
-                const merkle_branch = merkleBranchBuffers.map(b => b.toString('hex'))
+                const merkle_branch = merkleBranchBuffers.map(b => b.toString('hex'));
 
                 block.prevHash = prevHash;
                 block.version = version;
@@ -150,8 +152,8 @@ export class StratumV1JobsService {
                 block.timestamp = timestamp;
 
                 block.transactions = [tempCoinbaseTx];
-                const witnessTree = merkleFn(wtxHashes, bitcoinjs.crypto.hash256);
-                block.witnessCommit = witnessTree[witnessTree.length - 1];
+                const witnessTree = merkleFn(wtxHashes, (buf: Uint8Array) => Buffer.from(bitcoinjs.crypto.hash256(buf)));
+                block.witnessCommit = Buffer.from(witnessTree[witnessTree.length - 1]);
 
                 const id = this.getNextTemplateId();
                 this.latestJobTemplateId++;
