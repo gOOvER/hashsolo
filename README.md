@@ -48,8 +48,9 @@
   - `GET /api/metrics`: Prometheus text exposition endpoint for Grafana/Prometheus monitoring.
 - **Dynamic Fee Reporting:** `/api/info` and `/api/pool` expose `fee` dynamically (`1.5` when `DEV_FEE_ADDRESS` is configured for miners `>= 50 TH/s`, `0` otherwise).
 - **Notifications & Bot Commands:**
+  - **Discord Bot (Components V2 + PNG Charts):** Full slash commands (`/pool`, `/node`, `/stats`, `/workers`, `/chart`, `/subscribe`, `/unsubscribe`) with interactive refresh buttons, live hashrate/miner watching presence, locally rendered dark-mode PNG hashrate charts (`@resvg/resvg-js`), persistent `discord_subscriptions`, and Components V2 alerts for blocks, best difficulty, worker online/offline, and restarts.
   - Telegram bot commands: `/subscribe <address>`, `/stats [address]`, `/workers [address]`.
-  - Best-difficulty (`BEST_DIFF_ALERT_MIN`) and worker online/offline (`DEVICE_NOTIFICATIONS_ENABLED`) alerts via Telegram and **ntfy** (`NTFY_URL`, `NTFY_TOPIC`, `NTFY_TOKEN`).
+  - Best-difficulty (`BEST_DIFF_ALERT_MIN`) and worker online/offline (`DEVICE_NOTIFICATIONS_ENABLED`) alerts via Discord, Telegram, and **ntfy** (`NTFY_URL`, `NTFY_TOPIC`, `NTFY_TOKEN`).
 - **Performance, Reliability & Security Hardening:**
   - Non-root Docker image (`node`), configurable `CORS_ORIGIN`, graceful shutdown hooks, HTTP/HTTPS `keepAlive` on Bitcoin RPC, and ZMQ `hashblock` (45-byte notifications with `rawblock` fallback) + reorg `cleanJobs` detection.
   - Synchronous `mining.submit` parser/validator on the Stratum hot path, pre-cached Merkle branches, 60s startup hashrate warmup smoothing, and automatic stale-session cleanup on startup + every 60s.

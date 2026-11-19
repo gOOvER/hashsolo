@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+- Upgraded `DiscordService` to full **Discord Components V2** (`MessageFlags.IsComponentsV2`, `ContainerBuilder`, `TextDisplayBuilder`, `SeparatorBuilder`, `MediaGalleryBuilder`, `ActionRowBuilder`) with `/pool`, `/node`, `/stats`, `/workers`, `/chart`, `/subscribe`, and `/unsubscribe` slash commands, interactive refresh buttons, live watching presence (`X Miners · Y MH/s`), `DiscordSubscriptionsEntity` persistence, and Best-Difficulty / Worker Online-Offline / Block Found / Server Restart alerts.
+- Added local dark-mode SVG-to-PNG hashrate chart renderer (`src/services/discord-chart.util.ts` via `@resvg/resvg-js`) for Discord `/pool`, `/stats`, and `/chart` responses.
+
 ## [1.0.0] - 2026-11-19
 
 ### Added
