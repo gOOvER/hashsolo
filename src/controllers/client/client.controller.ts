@@ -18,13 +18,21 @@ export class ClientController {
     @Get(':address')
     async getClientInfo(@Param('address') address: string) {
 
-        const workers = await this.clientService.getByAddress(address);
-
-        const addressSettings = await this.addressSettingsService.getSettings(address, false);
+        const [workers, addressSettings, accountingSummary] = await Promise.all([
+            this.clientService.getByAddress(address),
+            this.addressSettingsService.getSettings(address, false),
+            this.clientStatisticsService.getAccountingSummary(address),
+        ]);
 
         return {
             bestDifficulty: addressSettings?.bestDifficulty,
             workersCount: workers.length,
+            accounting: {
+                bestSubmissionDifficulty: addressSettings?.bestDifficulty ?? 0,
+                totalCreditedDifficulty: accountingSummary.totalCreditedDifficulty,
+                creditedDifficultyLastHour: accountingSummary.creditedDifficultyLastHour,
+                creditedDifficultyLast10Minutes: accountingSummary.creditedDifficultyLast10Minutes,
+            },
             workers: await Promise.all(
                 workers.map(async (worker) => {
                     return {
