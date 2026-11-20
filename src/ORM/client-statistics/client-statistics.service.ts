@@ -79,11 +79,14 @@ export class ClientStatisticsService {
 
     }
 
-    public async getAccountingSummary() {
+    public async getAccountingSummary(address?: string) {
         const now = Date.now();
         const oneHourAgo = now - (60 * 60 * 1000);
         const currentSlot = Math.floor(now / (10 * 60 * 1000)) * (10 * 60 * 1000);
         const prevSlot = currentSlot - (10 * 60 * 1000);
+
+        const whereClause = address ? 'WHERE address = ?' : '';
+        const params: any[] = address ? [oneHourAgo, prevSlot, address] : [oneHourAgo, prevSlot];
 
         const rows: Array<{ totalShares: number | null; hourShares: number | null; recentShares: number | null }> =
             await this.clientStatisticsRepository.query(
@@ -91,8 +94,9 @@ export class ClientStatisticsService {
                     COALESCE(SUM(shares), 0) AS totalShares,
                     COALESCE(SUM(CASE WHEN time >= ? THEN shares ELSE 0 END), 0) AS hourShares,
                     COALESCE(SUM(CASE WHEN time >= ? THEN shares ELSE 0 END), 0) AS recentShares
-                 FROM client_statistics_entity`,
-                [oneHourAgo, prevSlot]
+                 FROM client_statistics_entity
+                 ${whereClause}`,
+                params
             );
 
         const row = rows?.[0] ?? { totalShares: 0, hourShares: 0, recentShares: 0 };
