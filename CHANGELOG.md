@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added local dark-mode SVG-to-PNG hashrate chart renderer (`src/services/discord-chart.util.ts` via `@resvg/resvg-js`) for Discord `/pool`, `/stats`, and `/chart` responses.
 
 ### Fixed
+- Normalized `NMMiner` user-agent variants (e.g. `Nerd-NMMiner/...`) to `NMMiner` and truncated `Nerd` prefixes (e.g. `Nerd Miner/...`) to `NerdMiner` in `SubscriptionMessage.refineUserAgent()`.
 - Enabled TCP keep-alive (`30s`) and idle socket timeout (`180s`) on `StratumV1Client` and shortened `ClientService.killDeadClients()` stale threshold from 5 minutes to 2 minutes so dropped ESP32/Wi-Fi sessions clear faster.
 - Fixed the `N/(N-1)` off-by-one interval bias in `StratumV1ClientStatistics.getSuggestedDifficulty()` (`submissionCache.slice(1)`, upstream `#167`).
 

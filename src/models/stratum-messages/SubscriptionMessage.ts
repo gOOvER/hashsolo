@@ -50,8 +50,14 @@ export class SubscriptionMessage extends StratumBaseMessage {
         if (userAgent.includes('cpuminer')) {
             return 'cpuminer';
         }
+        if (userAgent.includes('NMMiner')) {
+            return 'NMMiner';
+        }
 
         const refined = userAgent.split(' ')[0].split('/')[0].split('V')[0].split('-')[0];
+        if (refined === 'Nerd') {
+            return 'NerdMiner';
+        }
         // If shortening leaves nothing or only a date/version number, keep the
         // first whole word instead (e.g. "Vnish/1.2" used to become "", now "Vnish").
         if (refined === '' || /^[\d.]+$/.test(refined)) {

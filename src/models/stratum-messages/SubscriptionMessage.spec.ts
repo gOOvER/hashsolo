@@ -33,6 +33,8 @@ describe('SubscriptionMessage', () => {
         ['bitaxe/BM1370/v2.9.0', 'bitaxe'],
         ['bitaxe v2.2', 'bitaxe'],
         ['NerdMinerV2', 'NerdMiner'],
+        ['Nerd-NMMiner/1.0', 'NMMiner'],
+        ['Nerd Miner/1.6.3', 'NerdMiner'],
         ['2026-01-01-0-abc;someminer 1.0', '2026-01-01-0-abc'],
         ['1.2.3', '1.2.3'],
         ['Vnish/1.2', 'Vnish'],
