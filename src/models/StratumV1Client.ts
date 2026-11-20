@@ -89,6 +89,13 @@ export class StratumV1Client {
             this.sessionDifficulty = startDiff;
         }
 
+        // Detect dead ESP32/Wi-Fi sockets faster when no TCP FIN is received.
+        this.socket.setKeepAlive?.(true, 30_000);
+        this.socket.setTimeout?.(180_000);
+        this.socket.on?.('timeout', () => {
+            this.closeSocket();
+        });
+
         this.socket.on('data', (data: Buffer) => {
             if (this.connectionClosed || this.socket.destroyed || this.socket.writableEnded) {
                 return;

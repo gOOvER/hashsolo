@@ -139,7 +139,8 @@ export class StratumV1ClientStatistics {
             }
         }
 
-        const sum = this.submissionCache.reduce((pre, cur) => {
+        // Exclude the first entry whose timestamp marks the start of the (N-1) intervals (#167).
+        const sum = this.submissionCache.slice(1).reduce((pre, cur) => {
             pre += cur.difficulty;
             return pre;
         }, 0);

@@ -33,7 +33,10 @@ export class ClientController {
                         bestDifficulty: worker.bestDifficulty.toFixed(2),
                         hashRate: worker.hashRate,
                         startTime: worker.startTime,
-                        lastSeen: worker.updatedAt
+                        lastSeen: worker.updatedAt,
+                        rejectedLowDiff: worker.rejectedLowDiff ?? 0,
+                        rejectedStaleJob: worker.rejectedStaleJob ?? 0,
+                        rejectedDuplicate: worker.rejectedDuplicate ?? 0,
                     };
                 })
             )

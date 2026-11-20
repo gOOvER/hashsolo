@@ -1,0 +1,61 @@
+{
+  "title": "HashSolo Pool Overview",
+  "uid": "hashsolo-overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "15s",
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Total Pool Hashrate",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "targets": [{ "expr": "hashsolo_pool_hashrate_hs", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "Hs" } }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Connected Miners",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "targets": [{ "expr": "hashsolo_connected_miners_total", "refId": "A" }]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Bitcoin Block Height",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "targets": [{ "expr": "hashsolo_bitcoin_blocks", "refId": "A" }]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Next Block Reward (BTC)",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "targets": [{ "expr": "hashsolo_next_block_reward_sats / 1e8", "refId": "A" }],
+      "fieldConfig": { "defaults": { "decimals": 4 } }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Pool Hashrate History",
+      "gridPos": { "x": 0, "y": 4, "w": 16, "h": 8 },
+      "targets": [{ "expr": "hashsolo_pool_hashrate_hs", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "Hs" } }
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Bitcoin P2P Peers",
+      "gridPos": { "x": 16, "y": 4, "w": 8, "h": 4 },
+      "targets": [{ "expr": "hashsolo_bitcoin_connections", "refId": "A" }]
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "Found Blocks",
+      "gridPos": { "x": 16, "y": 8, "w": 8, "h": 4 },
+      "targets": [{ "expr": "hashsolo_found_blocks_total", "refId": "A" }]
+    }
+  ]
+}
