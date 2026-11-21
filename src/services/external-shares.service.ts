@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { ExternalPoolShare } from '../models/ExternalPoolShare';
 
@@ -9,26 +8,31 @@ export class ExternalSharesService {
   private readonly shareApiKey: string;
 
   constructor(
-    private readonly configService: ConfigService,
-    private readonly httpService: HttpService
+    private readonly configService: ConfigService
   ) {
     this.shareApiUrl = this.configService.get('SHARE_SUBMISSION_URL') || '';
-    this.shareApiKey = this.configService.get('SHARE_SUBMISSION_API_KEY');
+    this.shareApiKey = this.configService.get('SHARE_SUBMISSION_API_KEY') || '';
   }
 
   public submitShare(share: ExternalPoolShare): void {
     if (!this.shareApiUrl) {
       return;
     }
-    this.httpService.post(`${this.shareApiUrl}/api/share`, share, {
+    void fetch(`${this.shareApiUrl}/api/share`, {
+      method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         'x-api-key': this.shareApiKey
-      }
-    }).subscribe({
-      next: () =>{
-        console.log('External share accepted');
       },
-      error: (error) => console.error('Failed to submit share to API:', error.message)
-    });
+      body: JSON.stringify(share),
+      signal: AbortSignal.timeout(5000)
+    })
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        console.log('External share accepted');
+      })
+      .catch((error: any) => console.error('Failed to submit share to API:', error?.message ?? error));
   }
 }

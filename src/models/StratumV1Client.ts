@@ -795,7 +795,7 @@ export class StratumV1Client {
 
     private calculateDifficulty(header: Buffer): { submissionDifficulty: number, submissionHash: string } {
 
-        const hashResult = Buffer.from(bitcoinjs.crypto.hash256(header));
+        const hashResult = crypto.hash('sha256', crypto.hash('sha256', header, 'buffer'), 'buffer');
 
         const target = this.le256todouble(hashResult);
         const submissionDifficulty = target === 0 ? Number.POSITIVE_INFINITY : TRUE_DIFF_ONE / target;
