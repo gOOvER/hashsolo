@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed
+- Fixed `full-setup/grafana-dashboard.json` for latest Grafana import (`__inputs` `DS_PROMETHEUS`, `annotations`, `templating`, `time`, `datasource` bindings) and corrected Prometheus metric names to match `/api/metrics` (`hashsolo_miners_connected`, `hashsolo_bitcoin_node_blocks`, `hashsolo_bitcoin_node_connections`, `hashsolo_blocks_found_total`, `hashsolo_uptime_seconds`).
+
 ### Changed
 - Updated `full-setup/` for HashSolo & multi-arch (`amd64`/`arm64`): fixed `/hashsolo/DB` and `/hashsolo/.env` container volume paths + added healthchecks in `docker-compose-*.yml`, upgraded `full-setup/docker/bitcoin/Dockerfile` to Bitcoin Core `28.1` (`TARGETARCH` + `distroless/cc-debian12`), added `regtest` & `chown 1000:1000` in `prepare.sh`, expanded `public-pool-*.env` / `bitcoin-*.conf`, and updated `full-setup/README.md`.
 - Enabled native multi-arch Docker image builds (`linux/amd64` on `ubuntu-latest` + `linux/arm64` on `ubuntu-24.04-arm`, merged via `docker buildx imagetools create` without QEMU) in `.github/workflows/docker-publish.yml`.
