@@ -6,6 +6,7 @@ import { useContainer } from 'class-validator';
 import { readFileSync } from 'fs';
 import * as ecc from 'tiny-secp256k1';
 
+import { AppController } from './app.controller';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -28,7 +29,15 @@ async function bootstrap() {
   }
 
   const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter(options));
-  app.setGlobalPrefix('api')
+  app.setGlobalPrefix('api');
+
+  // Expose standard Prometheus /metrics alias alongside /api/metrics
+  const appController = app.get(AppController);
+  app.getHttpAdapter().getInstance().get('/metrics', async (_req, reply) => {
+    return reply
+      .header('Content-Type', 'text/plain; version=0.0.4; charset=utf-8')
+      .send(await appController.metrics());
+  });
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
