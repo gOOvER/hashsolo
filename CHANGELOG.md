@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-21
+
 ### Added
 - Added per-address `accounting` summary (`bestSubmissionDifficulty`, `totalCreditedDifficulty`, `creditedDifficultyLastHour`, `creditedDifficultyLast10Minutes`) to `GET /api/client/:address` via `ClientStatisticsService.getAccountingSummary(address?)`.
 - Added `full-setup/grafana-dashboard.json` for Prometheus `/api/metrics` visualization and `src/app.controller.spec.ts` unit tests for `infoAccounting()`.
