@@ -1,7 +1,8 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Server, Socket } from 'net';
 import { monitorEventLoopDelay } from 'perf_hooks';
+import { Subscription } from 'rxjs';
 
 import { StratumV1Client } from '../models/StratumV1Client';
 import { AddressSettingsService } from '../ORM/address-settings/address-settings.service';
@@ -29,11 +30,12 @@ const DEFAULT_MAX_CONNECTIONS_PER_LISTENER = 10000;
 
 
 @Injectable()
-export class StratumV1Service implements OnModuleInit {
+export class StratumV1Service implements OnModuleInit, OnModuleDestroy {
 
     private readonly listeners: StratumListenerState[] = [];
     private readonly eventLoopDelay = monitorEventLoopDelay({ resolution: 20 });
     private backpressureMonitor: NodeJS.Timeout | null = null;
+    private jobKeepAliveSub: Subscription | null = null;
     private healthyBackpressureChecks = 0;
 
     constructor(
@@ -65,8 +67,22 @@ export class StratumV1Service implements OnModuleInit {
             this.startSocketServer(this.getStratumPort());
         }, 1000 * 10);
 
+        this.jobKeepAliveSub = this.stratumV1JobsService?.newMiningJob$?.subscribe({ error: () => undefined }) ?? null;
         this.startBackpressureMonitor();
 
+    }
+
+    onModuleDestroy(): void {
+        this.jobKeepAliveSub?.unsubscribe();
+        this.jobKeepAliveSub = null;
+        if (this.backpressureMonitor) {
+            clearInterval(this.backpressureMonitor);
+            this.backpressureMonitor = null;
+        }
+        this.eventLoopDelay.disable();
+        for (const listener of this.listeners) {
+            listener.server?.close();
+        }
     }
 
     private startSocketServer(port: number) {

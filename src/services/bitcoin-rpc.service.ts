@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance } from 'axios';
 import * as fs from 'node:fs';
@@ -33,12 +33,16 @@ export interface INextBlockReward {
 }
 
 @Injectable()
-export class BitcoinRpcService implements OnModuleInit {
+export class BitcoinRpcService implements OnModuleInit, OnModuleDestroy {
 
     private blockHeight = 0;
+    private latestMiningInfo: IMiningInfo | null = null;
     private latestTemplateInfo: { coinbasevalue: number; height: number } | null = null;
     private client: AxiosInstance;
     private rpcRequestId = 0;
+    private isPolling = false;
+    private pollTimers: NodeJS.Timeout[] = [];
+    private zmqSock: zmq.Subscriber | null = null;
     private _newBlock$: BehaviorSubject<IMiningInfo> = new BehaviorSubject(undefined);
     public newBlock$ = this._newBlock$.pipe(filter(block => block != null), shareReplay({ refCount: true, bufferSize: 1 }));
 
@@ -46,6 +50,23 @@ export class BitcoinRpcService implements OnModuleInit {
         private readonly configService: ConfigService,
         private rpcBlockService: RpcBlockService
     ) {
+    }
+
+    public getLatestMiningInfo(): IMiningInfo | null {
+        return this.latestMiningInfo;
+    }
+
+    onModuleDestroy(): void {
+        for (const timer of this.pollTimers) {
+            clearInterval(timer);
+        }
+        this.pollTimers = [];
+        try {
+            this.zmqSock?.close();
+        } catch {
+            // ignore close errors during shutdown
+        }
+        this.zmqSock = null;
     }
 
     async onModuleInit() {
@@ -58,10 +79,13 @@ export class BitcoinRpcService implements OnModuleInit {
         const cookiefile = this.configService.get('BITCOIN_RPC_COOKIEFILE');
 
         if (cookiefile != undefined && cookiefile != '') {
-            const cookie = fs.readFileSync(cookiefile).toString().trim().split(':');
-
-            user = cookie[0];
-            pass = cookie[1];
+            try {
+                const cookie = fs.readFileSync(cookiefile).toString().trim().split(':');
+                user = cookie[0];
+                pass = cookie[1];
+            } catch (err: any) {
+                console.error(`Failed to read Bitcoin RPC cookiefile (${cookiefile}):`, err?.message ?? err);
+            }
         }
 
         const baseURL = this.buildRpcUrl(url, port);
@@ -85,6 +109,7 @@ export class BitcoinRpcService implements OnModuleInit {
         if (this.configService.get('BITCOIN_ZMQ_HOST')) {
             console.log('Using ZMQ');
             const sock = new zmq.Subscriber;
+            this.zmqSock = sock;
 
 
             sock.connectTimeout = 1000;
@@ -108,10 +133,11 @@ export class BitcoinRpcService implements OnModuleInit {
                         clearInterval(startupRetry);
                     }
                 }, 2000);
+                this.pollTimers.push(startupRetry);
             }
 
         } else {
-            setInterval(this.pollMiningInfo.bind(this), 500);
+            this.pollTimers.push(setInterval(this.pollMiningInfo.bind(this), 500));
         }
     }
 
@@ -119,20 +145,31 @@ export class BitcoinRpcService implements OnModuleInit {
         try {
             for await (const [topic, msg] of sock) {
                 console.log("New Block");
-                await this.pollMiningInfo();
+                await this.pollMiningInfo(true);
             }
         } catch (e: any) {
             console.error('ZMQ listener error, falling back to polling:', e?.message ?? e);
-            setInterval(this.pollMiningInfo.bind(this), 500);
+            this.pollTimers.push(setInterval(this.pollMiningInfo.bind(this), 500));
         }
     }
 
-    public async pollMiningInfo() {
-        const miningInfo = await this.getMiningInfo();
-        if (miningInfo != null && miningInfo.blocks > this.blockHeight) {
-            console.log("block height change");
-            this._newBlock$.next(miningInfo);
-            this.blockHeight = miningInfo.blocks;
+    public async pollMiningInfo(forceNotify = false) {
+        if (this.isPolling) {
+            return;
+        }
+        this.isPolling = true;
+        try {
+            const miningInfo = await this.getMiningInfo();
+            if (miningInfo != null) {
+                this.latestMiningInfo = miningInfo;
+                if (miningInfo.blocks !== this.blockHeight || forceNotify) {
+                    console.log("block height change");
+                    this._newBlock$.next(miningInfo);
+                    this.blockHeight = miningInfo.blocks;
+                }
+            }
+        } finally {
+            this.isPolling = false;
         }
     }
 

@@ -15,7 +15,7 @@ export class AuthorizationMessage extends StratumBaseMessage {
     @Expose()
     @IsString()
     @Transform(({ value, key, obj, type }) => {
-        return obj.params[0].split('.')[0];
+        return typeof obj?.params?.[0] === 'string' ? obj.params[0].split('.')[0] : obj?.params?.[0];
     })
     @IsBitcoinAddress()
     public address: string;
@@ -24,6 +24,9 @@ export class AuthorizationMessage extends StratumBaseMessage {
     @IsString()
     @MaxLength(64)
     @Transform(({ value, key, obj, type }) => {
+        if (typeof obj?.params?.[0] !== 'string') {
+            return 'worker';
+        }
         return obj.params[0].split('.')[1] == null ? 'worker' : obj.params[0].split('.')[1];
     })
     public worker: string;

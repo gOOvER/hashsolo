@@ -132,7 +132,19 @@ export class StratumV1Client {
 
     }
 
+    private destroyed = false;
+
     public async destroy() {
+        if (this.destroyed) {
+            return;
+        }
+        this.destroyed = true;
+        this.connectionClosed = true;
+
+        if (this.creatingEntity != null && this.extraNonceAndSessionId) {
+            const sessionId = this.extraNonceAndSessionId;
+            void this.creatingEntity.then(() => this.clientService.delete(sessionId)).catch(() => undefined);
+        }
 
         if (this.extraNonceAndSessionId) {
             StratumV1Client.activeSessionIds.delete(this.extraNonceAndSessionId);
@@ -449,6 +461,8 @@ export class StratumV1Client {
                 try {
                     if (jobTemplate.blockData.clearJobs) {
                         this.miningSubmissionHashes.clear();
+                    } else if (this.miningSubmissionHashes.size > 5000) {
+                        this.miningSubmissionHashes.clear();
                     }
                     await this.sendNewMiningJob(jobTemplate);
                 } catch (e) {
@@ -536,14 +550,19 @@ export class StratumV1Client {
 
         if (this.creatingEntity == null) {
             this.creatingEntity = (async () => {
-                this.entity = await this.clientService.insert({
-                    sessionId: this.extraNonceAndSessionId,
-                    address: this.clientAuthorization.address,
-                    clientName: this.clientAuthorization.worker,
-                    userAgent: this.clientSubscription.userAgent,
-                    startTime: new Date(),
-                    bestDifficulty: 0
-                });
+                try {
+                    this.entity = await this.clientService.insert({
+                        sessionId: this.extraNonceAndSessionId,
+                        address: this.clientAuthorization.address,
+                        clientName: this.clientAuthorization.worker,
+                        userAgent: this.clientSubscription.userAgent,
+                        startTime: new Date(),
+                        bestDifficulty: 0
+                    });
+                } catch (err) {
+                    this.creatingEntity = null;
+                    throw err;
+                }
             })();
         }
 
@@ -670,7 +689,12 @@ export class StratumV1Client {
                 await this.statistics.addShares(this.entity, this.sessionDifficulty);
                 const now = new Date();
                 // only update every minute
-                if (this.entity.updatedAt == null || now.getTime() - this.entity.updatedAt.getTime() > 1000 * 60) {
+                const updatedAtMs = this.entity.updatedAt instanceof Date
+                    ? this.entity.updatedAt.getTime()
+                    : this.entity.updatedAt != null
+                        ? new Date(this.entity.updatedAt).getTime()
+                        : NaN;
+                if (this.entity.updatedAt == null || Number.isNaN(updatedAtMs) || now.getTime() - updatedAtMs > 1000 * 60) {
                     await this.clientService.heartbeat(this.entity.address, this.entity.clientName, this.entity.sessionId, this.hashRate, now);
                     this.entity.updatedAt = now;
                 }

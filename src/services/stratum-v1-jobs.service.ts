@@ -183,17 +183,17 @@ export class StratumV1JobsService {
                 if (data.blockData.clearJobs) {
                     this.blocks = {};
                     this.jobs = {};
-                }else{
+                } else {
                     const now = new Date().getTime();
                     // Delete old templates (5 minutes)
-                    for(const templateId in this.blocks){
-                        if(now - this.blocks[templateId].blockData.creation  > (1000 * 60 * 5)){
+                    for (const templateId in this.blocks) {
+                        if (now - this.blocks[templateId].blockData.creation > (1000 * 60 * 5)) {
                             delete this.blocks[templateId];
                         }
                     }
                     // Delete old jobs (5 minutes)
                     for (const jobId in this.jobs) {
-                        if(now - this.jobs[jobId].creation > (1000 * 60 * 5)){
+                        if (now - this.jobs[jobId].creation > (1000 * 60 * 5)) {
                             delete this.jobs[jobId];
                         }
                     }
@@ -201,7 +201,7 @@ export class StratumV1JobsService {
                 this.blocks[data.blockData.id] = data;
             }),
             shareReplay({ refCount: true, bufferSize: 1 })
-        )
+        );
     }
 
     private calculateNetworkDifficulty(nBits: number) {

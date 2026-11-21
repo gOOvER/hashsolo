@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 
 import { ClientStatisticsService } from '../ORM/client-statistics/client-statistics.service';
@@ -6,7 +6,9 @@ import { ClientService } from '../ORM/client/client.service';
 import { RpcBlockService } from '../ORM/rpc-block/rpc-block.service';
 
 @Injectable()
-export class AppService implements OnModuleInit {
+export class AppService implements OnModuleInit, OnModuleDestroy {
+
+    private maintenanceTimers: NodeJS.Timeout[] = [];
 
     constructor(
         private readonly clientStatisticsService: ClientStatisticsService,
@@ -35,24 +37,28 @@ export class AppService implements OnModuleInit {
             // Clear stale active client sessions left behind by a previous process/container restart.
             await this.clientService.deleteAll();
 
-            setInterval(async () => {
-                await this.deleteOldStatistics();
-            }, 1000 * 60 * 60);
-
-            setInterval(async () => {
-                console.log('Killing dead clients');
-                await this.clientService.killDeadClients();
-            }, 1000 * 60);
-
-            setInterval(async () => {
-                console.log('Deleting Old Blocks');
-                await this.rpcBlockService.deleteOldBlocks();
-            }, 1000 * 60 * 60 * 24);
-
-
-
+            this.maintenanceTimers.push(
+                setInterval(async () => {
+                    await this.deleteOldStatistics();
+                }, 1000 * 60 * 60),
+                setInterval(async () => {
+                    console.log('Killing dead clients');
+                    await this.clientService.killDeadClients();
+                }, 1000 * 60),
+                setInterval(async () => {
+                    console.log('Deleting Old Blocks');
+                    await this.rpcBlockService.deleteOldBlocks();
+                }, 1000 * 60 * 60 * 24)
+            );
         }
 
+    }
+
+    onModuleDestroy(): void {
+        for (const timer of this.maintenanceTimers) {
+            clearInterval(timer);
+        }
+        this.maintenanceTimers = [];
     }
 
     private async deleteOldStatistics() {

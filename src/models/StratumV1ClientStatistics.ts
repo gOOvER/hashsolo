@@ -55,9 +55,10 @@ export class StratumV1ClientStatistics {
 
         if (this.currentTimeSlot == null) {
             // First record, insert it
-			this.previousTimeSlotTime = new Date();
+            this.previousTimeSlotTime = new Date();
             this.currentTimeSlotTime = new Date();
             this.currentTimeSlot = timeSlot;
+            this.lastSave = date.getTime();
             this.shares += targetDifficulty;
             this.acceptedCount++;
             await this.clientStatisticsService.insert({
@@ -68,10 +69,10 @@ export class StratumV1ClientStatistics {
                 clientName: client.clientName,
                 sessionId: client.sessionId
             });
-            this.lastSave = new Date().getTime();
         } else if (this.currentTimeSlot != timeSlot) {
             // Transitioning to a new time slot,
             // First update the old time slot with the latest data
+            this.lastSave = date.getTime();
             await this.clientStatisticsService.update({
                 time: this.currentTimeSlot,
                 shares: this.shares,
@@ -80,13 +81,13 @@ export class StratumV1ClientStatistics {
                 clientName: client.clientName,
                 sessionId: client.sessionId
             });
-			 this.previousShares = this.shares;
+            this.previousShares = this.shares;
             this.previousTimeSlotTime = this.currentTimeSlotTime;
             this.currentTimeSlotTime = new Date();
             // Set the new time slot and add incoming shares then insert it
             this.currentTimeSlot = timeSlot;
             this.shares = targetDifficulty;
-            this.acceptedCount = 1
+            this.acceptedCount = 1;
             await this.clientStatisticsService.insert({
                 time: this.currentTimeSlot,
                 shares: this.shares,
@@ -95,9 +96,9 @@ export class StratumV1ClientStatistics {
                 clientName: client.clientName,
                 sessionId: client.sessionId
             });
-            this.lastSave = new Date().getTime();
         } else if ((date.getTime() - 60 * 1000) > this.lastSave) {
             // If we haven't saved for a minute, update the table
+            this.lastSave = date.getTime();
             this.shares += targetDifficulty;
             this.acceptedCount++;
             await this.clientStatisticsService.update({
@@ -108,7 +109,6 @@ export class StratumV1ClientStatistics {
                 clientName: client.clientName,
                 sessionId: client.sessionId
             });
-            this.lastSave = new Date().getTime();
         } else {
             // Accept the shares if none of the prior conditions are met,
             // saving to memory for storing later
@@ -132,11 +132,22 @@ export class StratumV1ClientStatistics {
 
         // miner hasn't submitted shares in one minute
         if (this.submissionCache.length < 5) {
-            if ((new Date().getTime() - this.submissionCacheStart.getTime()) / 1000 > 60) {
+            const lastTime = this.submissionCache.length > 0
+                ? this.submissionCache[this.submissionCache.length - 1].time.getTime()
+                : this.submissionCacheStart.getTime();
+            if ((Date.now() - lastTime) / 1000 > 60) {
+                this.submissionCacheStart = new Date();
                 return this.nearestPowerOfTwo(clientDifficulty / 6);
             } else {
                 return null;
             }
+        }
+
+        const lastSubmissionTime = this.submissionCache[this.submissionCache.length - 1].time.getTime();
+        if ((Date.now() - lastSubmissionTime) / 1000 > 60) {
+            this.submissionCache = [];
+            this.submissionCacheStart = new Date();
+            return this.nearestPowerOfTwo(clientDifficulty / 6);
         }
 
         // Exclude the first entry whose timestamp marks the start of the (N-1) intervals (#167).
