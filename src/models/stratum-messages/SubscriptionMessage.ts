@@ -15,7 +15,10 @@ export class SubscriptionMessage extends StratumBaseMessage {
     @IsString()
     @MaxLength(128)
     @Transform(({ value, key, obj, type }) => {
-        return obj?.params?.[0] == null ? 'unknown' : SubscriptionMessage.refineUserAgent(obj.params[0]);
+        if (obj?.params?.[0] == null) {
+            return 'unknown';
+        }
+        return typeof obj.params[0] === 'string' ? SubscriptionMessage.refineUserAgent(obj.params[0]) : obj.params[0];
     })
     public userAgent: string;
 

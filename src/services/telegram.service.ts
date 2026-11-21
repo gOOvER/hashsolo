@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance } from 'axios';
 import { validate } from 'bitcoin-address-validation';
@@ -10,11 +10,12 @@ import { TelegramSubscriptionsService } from '../ORM/telegram-subscriptions/tele
 
 
 @Injectable()
-export class TelegramService implements OnModuleInit {
+export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
     private bot: AxiosInstance;
     private updateOffset = 0;
     private pollingTimer: NodeJS.Timeout;
+    private isPolling = false;
 
     constructor(
         private readonly configService: ConfigService,
@@ -43,8 +44,23 @@ export class TelegramService implements OnModuleInit {
 
         await this.pollUpdates();
         this.pollingTimer = setInterval(async () => {
-            await this.pollUpdates();
+            if (this.isPolling) {
+                return;
+            }
+            this.isPolling = true;
+            try {
+                await this.pollUpdates();
+            } finally {
+                this.isPolling = false;
+            }
         }, 2000);
+    }
+
+    onModuleDestroy(): void {
+        if (this.pollingTimer) {
+            clearInterval(this.pollingTimer);
+            this.pollingTimer = undefined;
+        }
     }
 
     public async notifySubscribersBlockFound(address: string, height: number, block: Block, message: string) {
@@ -206,9 +222,13 @@ export class TelegramService implements OnModuleInit {
     }
 
     private async sendMessage(chatId: number | string, text: string) {
-        await this.bot.post('sendMessage', {
-            chat_id: chatId,
-            text
-        });
+        try {
+            await this.bot.post('sendMessage', {
+                chat_id: chatId,
+                text
+            });
+        } catch (e: any) {
+            console.error(`Telegram sendMessage failed (${chatId}):`, e?.message ?? e);
+        }
     }
 }

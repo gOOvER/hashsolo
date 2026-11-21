@@ -32,10 +32,16 @@ export class ClientService {
         }
 
         try {
-            const results = await this.clientRepository.insert(queueCopy.map(c => c.partialClient));
+            const CHUNK_SIZE = 200;
+            const generatedMaps: ObjectLiteral[] = [];
+            for (let i = 0; i < queueCopy.length; i += CHUNK_SIZE) {
+                const chunk = queueCopy.slice(i, i + CHUNK_SIZE);
+                const results = await this.clientRepository.insert(chunk.map(c => c.partialClient));
+                generatedMaps.push(...results.generatedMaps);
+            }
 
             queueCopy.forEach((c, index) => {
-                c.result.next(results.generatedMaps[index]);
+                c.result.next(generatedMaps[index]);
                 c.result.complete();
             });
         } catch (e) {

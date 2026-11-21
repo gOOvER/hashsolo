@@ -14,6 +14,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added local dark-mode SVG-to-PNG hashrate chart renderer (`src/services/discord-chart.util.ts` via `@resvg/resvg-js`) for Discord `/pool`, `/stats`, and `/chart` responses.
 
 ### Fixed
+- Fixed `DateTimeTransformer` storing locale-dependent strings instead of UTC SQLite timestamps (`YYYY-MM-DD HH:MM:SS`) and returning strings instead of `Date` instances, which broke `killDeadClients()`, `deleteOldClients()`, and `StratumV1Client` heartbeat throttling.
+- Prevented `GET /api/pool` and `GET /api/network` from hanging indefinitely when `bitcoind` is offline by reading `BitcoinRpcService.getLatestMiningInfo()`.
+- Hardened `BitcoinRpcService` (safe `cookiefile` loading, `OnModuleDestroy` cleanup, `isPolling` overlap guard, same-height/forced ZMQ refresh) and `StratumV1JobsService` (`finalize()` resets `lastWorkSignature` so reconnecting miners after idle periods immediately get jobs).
+- Hardened `StratumV1Client` (`destroy()` idempotency + fast-disconnect ghost-row prevention, `ensureClientEntity()` retry on transient errors, `miningSubmissionHashes` pruning, `@Transform` string guards) and `StratumV1ClientStatistics` (`lastSave` race + stalled-miner VarDiff drop).
+- Chunked `ClientService.insertClients()` into batches of 200 to avoid SQLite `SQLITE_MAX_VARIABLE_NUMBER` errors on mass reconnects, and added `OnModuleDestroy` + error/overlap guards in `AppService` and `TelegramService`.
 - Retried initial `pollMiningInfo()` every 2s in ZMQ mode until `bitcoind` RPC finishes warming up (`blockHeight > 0`), preventing Stratum from accepting miners with zero `mining.notify` jobs after a server reboot.
 - Normalized `NMMiner` user-agent variants (e.g. `Nerd-NMMiner/...`) to `NMMiner` and truncated `Nerd` prefixes (e.g. `Nerd Miner/...`) to `NerdMiner` in `SubscriptionMessage.refineUserAgent()`.
 - Enabled TCP keep-alive (`30s`) and idle socket timeout (`180s`) on `StratumV1Client` and shortened `ClientService.killDeadClients()` stale threshold from 5 minutes to 2 minutes so dropped ESP32/Wi-Fi sessions clear faster.

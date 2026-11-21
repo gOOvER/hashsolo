@@ -1,14 +1,29 @@
 import { ValueTransformer } from 'typeorm';
 
 export class DateTimeTransformer implements ValueTransformer {
-    to(value: Date): any {
-        // Convert the local time to UTC before saving to the database
-        const utcTime = value?.toLocaleString();
-        return utcTime;
+    to(value: Date | string | null | undefined): string | null | undefined {
+        if (value == null) {
+            return value as null | undefined;
+        }
+        const date = value instanceof Date ? value : new Date(value);
+        if (Number.isNaN(date.getTime())) {
+            return null;
+        }
+        // Store SQLite-compatible UTC format ('YYYY-MM-DD HH:MM:SS') so DATETIME(...) comparisons work reliably.
+        return date.toISOString().slice(0, 19).replace('T', ' ');
     }
 
-    from(value: any): Date {
-        // Convert the UTC time from the database to the local time zone
-        return value;
+    from(value: Date | string | null | undefined): Date | null | undefined {
+        if (value == null) {
+            return value as null | undefined;
+        }
+        if (value instanceof Date) {
+            return value;
+        }
+        const normalized = typeof value === 'string' && !value.includes('T')
+            ? `${value.replace(' ', 'T')}Z`
+            : value;
+        const parsed = new Date(normalized);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
     }
 }
