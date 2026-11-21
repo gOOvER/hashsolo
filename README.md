@@ -9,6 +9,7 @@
   [![Docker Build & Publish](https://github.com/gOOvER/hashsolo/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/gOOvER/hashsolo/actions/workflows/docker-publish.yml)
   [![Trivy Security Scan](https://github.com/gOOvER/hashsolo/actions/workflows/trivy-analysis.yml/badge.svg)](https://github.com/gOOvER/hashsolo/actions/workflows/trivy-analysis.yml)
   [![Node.js](https://img.shields.io/badge/Node.js-26%2B-339933?logo=node.js&logoColor=white)](.nvmrc)
+  [![Docker Arch](https://img.shields.io/badge/Docker-amd64%20%7C%20arm64-2496ed?logo=docker&logoColor=white)](.github/workflows/docker-publish.yml)
   [![License](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE.txt)
   [![Support](https://img.shields.io/badge/Support-donate.goover.dev-ff69b4?logo=ko-fi&logoColor=white)](https://donate.goover.dev)
   [![Live Pool](https://img.shields.io/badge/Live%20Pool-hashsolo.goover.dev-f7931a?logo=bitcoin&logoColor=white)](https://hashsolo.goover.dev)
@@ -52,7 +53,7 @@ Because upstream has become largely unmaintained with outdated dependencies and 
 
 ## 🚀 Key Improvements in This Fork
 
-- **Modern Runtime & Stack:** Node.js `26`, NestJS `12`, TypeORM `1.x` (`better-sqlite3`), `bitcoinjs-lib` `7`, TypeScript `6`, Jest `30`, ESLint `10`.
+- **Modern Runtime & Multi-Arch:** Node.js `26` (`ES2024`, `NODE_COMPILE_CACHE`, native `fetch` & `crypto.hash`), NestJS `12`, TypeORM `1.x` (`better-sqlite3`), `bitcoinjs-lib` `7`, TypeScript `6`, Jest `30`, ESLint `10` — built natively for **`linux/amd64` & `linux/arm64`** (without QEMU).
 - **Live Node, Miners & Reward Endpoints:**
   - `GET /api/node/status`: Live `bitcoind` sync progress (`blocks`, `headers`, `verificationProgress`, `pruned`, `sizeOnDisk`, `connections`).
   - `GET /api/info/next-block-reward`: Live `coinbasevalue` (`rewardSats`, `subsidySats`, `feeSats`, `height`) from the current block template.
