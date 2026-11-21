@@ -1,5 +1,5 @@
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Controller, Get, Header, Inject } from '@nestjs/common';
+import { Controller, Get, Header, Inject, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cache } from 'cache-manager';
 import { firstValueFrom } from 'rxjs';
@@ -9,6 +9,7 @@ import { BlocksService } from './ORM/blocks/blocks.service';
 import { ClientStatisticsService } from './ORM/client-statistics/client-statistics.service';
 import { ClientService } from './ORM/client/client.service';
 import { BitcoinRpcService } from './services/bitcoin-rpc.service';
+import { StratumV2Service } from './services/stratum-v2.service';
 
 @Controller()
 export class AppController {
@@ -23,6 +24,7 @@ export class AppController {
     private readonly blocksService: BlocksService,
     private readonly bitcoinRpcService: BitcoinRpcService,
     private readonly addressSettingsService: AddressSettingsService,
+    @Optional() private readonly stratumV2Service?: StratumV2Service,
   ) { }
 
   @Get('info')
@@ -41,12 +43,21 @@ export class AppController {
     const userAgents = await this.clientService.getUserAgents();
     const highScores = await this.addressSettingsService.getHighScores();
 
+    const sv2PublicKey = this.stratumV2Service?.getAuthorityPublicKey() ?? null;
     const data = {
       blockData,
       userAgents,
       highScores,
       uptime: this.uptime,
-      fee: this.getPoolFeePercent()
+      fee: this.getPoolFeePercent(),
+      ...(sv2PublicKey
+        ? {
+            sv2: {
+              poolAuthorityPublicKey: sv2PublicKey,
+              authorityKeyConfigured: true
+            }
+          }
+        : {})
     };
 
     //1 min
