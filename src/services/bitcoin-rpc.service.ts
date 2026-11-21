@@ -101,6 +101,15 @@ export class BitcoinRpcService implements OnModuleInit {
             this.listenForNewBlocks(sock);
             await this.pollMiningInfo();
 
+            if (this.blockHeight === 0) {
+                const startupRetry = setInterval(async () => {
+                    await this.pollMiningInfo();
+                    if (this.blockHeight > 0) {
+                        clearInterval(startupRetry);
+                    }
+                }, 2000);
+            }
+
         } else {
             setInterval(this.pollMiningInfo.bind(this), 500);
         }
