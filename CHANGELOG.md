@@ -51,19 +51,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fixed `StratumV1JobsService` `merkle_branch` serialization for `bitcoinjs-lib` v7 (`Uint8Array` -> `Buffer.from(...)` so `mining.notify` sends 64-char hex hashes instead of comma-separated decimal byte strings).
 - Persisted `ClientEntity` immediately on `mining.authorize` in `StratumV1Client` so newly connected miners appear in the UI before submitting their first share.
 - Stopped calling `resetBestDifficultyAndShares()` on block found in `StratumV1Client` so address `bestDifficulty` and `shares` are preserved across blocks (inspired by `blitzpool`).
-
-### Changed
-- Enabled HTTP/HTTPS `keepAlive` agents on `BitcoinRpcService` and subscribed ZMQ to both `hashblock` (45-byte notifications) and `rawblock` (backward compatibility).
-- Computed `fee` dynamically (`1.5` when `DEV_FEE_ADDRESS` is configured, `0` otherwise) in `/api/info` and `/api/pool`.
-- Set Node.js 26 as the default runtime (`Dockerfile` updated to `node:26-bookworm-slim`, `package.json` `engines.node` set to `>=26.0.0`, `@types/node` updated to `^26.6.6`).
-- Upgraded major dependencies: NestJS 12 (`@nestjs/*@^12.x`), TypeORM 1.x (`^1.1.3`) with `better-sqlite3` (`12.11.1`, replacing `sqlite3`), `bitcoinjs-lib@^7.0.5` (`Uint8Array`/`bigint` API), `bitcoin-address-validation@^4.0.0`, `bs58@^6.0.0`, `TypeScript@^6.0.0`, `Jest@^30.5.2` (with `--experimental-vm-modules`), `ESLint@^10.15.0` + `@typescript-eslint/*@^8.73.0` (migrated to `eslint.config.mjs`), `@types/express@^5.0.6`, `zeromq@^6.8.0`, `axios@^1.21.1`, `discord.js@^14.28.1`, and `class-validator@^0.15.1`.
-- Changed SQLite `PRAGMA synchronous` from `off` to `NORMAL` in `AppService` for WAL corruption safety.
-- Configured `Dockerfile` to run as non-root `node` user and added graceful shutdown (`app.enableShutdownHooks()`) and configurable `CORS_ORIGIN` in `main.ts`.
-- Optimized `StratumV1JobsService` to compute Merkle roots and witness commitments from `txid`/`hash`/`weight` without deserializing all block transactions on every template refresh, and pre-cached `merkleBranchBuffers` and payment scripts in `MiningJob`.
-- Replaced `class-validator` reflection on the `mining.submit` hot path in `StratumV1Client` with synchronous `parseAndValidateMiningSubmit()`.
-- Removed unused `BTCPayService` and `BraiinsService` from `AppModule` and removed unused `patch-package` `postinstall` hook.
-
-### Fixed
 - Fixed TCP buffer exhaustion DoS and concurrent message race conditions in `StratumV1Client` by enforcing a 16 KB buffer limit, sequential message queue, and JSON object type checks.
 - Fixed `StratumV1Client` `resetBestDifficultyAndShares()` never triggering on block found (`result == null || result === 'SUCCESS!'`).
 - Fixed `MiningSubmitMessage` and `SuggestDifficulty` validation (hex/length checks for `extraNonce2`, `ntime`, `nonce`, `versionMask`; `0x1fffe000` mask check; minimum difficulty `0.00001`).
@@ -78,3 +65,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fixed `StratumV1Client` `checkDifficulty()` to use `this.write()`, bounded log-state maps, and checked `extraNonce1` uniqueness against active sessions.
 - Fixed `ClientStatisticsService` chart queries dropping the sole data point when only one bucket exists.
 - Removed redundant unique index on `ClientEntity` primary key columns.
+
+### Changed
+- Enabled HTTP/HTTPS `keepAlive` agents on `BitcoinRpcService` and subscribed ZMQ to both `hashblock` (45-byte notifications) and `rawblock` (backward compatibility).
+- Computed `fee` dynamically (`1.5` when `DEV_FEE_ADDRESS` is configured, `0` otherwise) in `/api/info` and `/api/pool`.
+- Set Node.js 26 as the default runtime (`Dockerfile` updated to `node:26-bookworm-slim`, `package.json` `engines.node` set to `>=26.0.0`, `@types/node` updated to `^26.6.6`).
+- Upgraded major dependencies: NestJS 12 (`@nestjs/*@^12.x`), TypeORM 1.x (`^1.1.3`) with `better-sqlite3` (`12.11.1`, replacing `sqlite3`), `bitcoinjs-lib@^7.0.5` (`Uint8Array`/`bigint` API), `bitcoin-address-validation@^4.0.0`, `bs58@^6.0.0`, `TypeScript@^6.0.0`, `Jest@^30.5.2` (with `--experimental-vm-modules`), `ESLint@^10.15.0` + `@typescript-eslint/*@^8.73.0` (migrated to `eslint.config.mjs`), `@types/express@^5.0.6`, `zeromq@^6.8.0`, `axios@^1.21.1`, `discord.js@^14.28.1`, and `class-validator@^0.15.1`.
+- Changed SQLite `PRAGMA synchronous` from `off` to `NORMAL` in `AppService` for WAL corruption safety.
+- Configured `Dockerfile` to run as non-root `node` user and added graceful shutdown (`app.enableShutdownHooks()`) and configurable `CORS_ORIGIN` in `main.ts`.
+- Optimized `StratumV1JobsService` to compute Merkle roots and witness commitments from `txid`/`hash`/`weight` without deserializing all block transactions on every template refresh, and pre-cached `merkleBranchBuffers` and payment scripts in `MiningJob`.
+- Replaced `class-validator` reflection on the `mining.submit` hot path in `StratumV1Client` with synchronous `parseAndValidateMiningSubmit()`.
+- Removed unused `BTCPayService` and `BraiinsService` from `AppModule` and removed unused `patch-package` `postinstall` hook.
