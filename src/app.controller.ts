@@ -50,6 +50,8 @@ export class AppController {
       highScores,
       uptime: this.uptime,
       fee: this.getPoolFeePercent(),
+      version: '1.2.0',
+      network: this.configService.get<string>('NETWORK') || 'mainnet',
       ...(sv2PublicKey
         ? {
             sv2: {
@@ -210,15 +212,21 @@ export class AppController {
   @Get('metrics')
   @Header('Content-Type', 'text/plain; version=0.0.4; charset=utf-8')
   public async metrics(): Promise<string> {
-    const [userAgents, blocksFound, nodeInfo, networkInfo] = await Promise.all([
+    const [userAgents, blocksFound, highScores, nodeInfo, networkInfo] = await Promise.all([
       this.clientService.getUserAgents(),
       this.blocksService.getFoundBlocks(),
+      this.addressSettingsService.getHighScores(),
       this.bitcoinRpcService.getBlockchainInfo(),
       this.bitcoinRpcService.getNetworkInfo()
     ]);
 
     const totalHashRate = userAgents.reduce((acc, ua) => acc + (parseFloat(ua.totalHashRate) || 0), 0);
     const totalMiners = userAgents.reduce((acc, ua) => acc + (parseInt(ua.count, 10) || 0), 0);
+    const sv2Miners = userAgents
+      .filter((ua) => typeof ua.userAgent === 'string' && (ua.userAgent.startsWith('SV2:') || ua.userAgent === 'StratumV2'))
+      .reduce((acc, ua) => acc + (parseInt(ua.count, 10) || 0), 0);
+    const sv2Enabled = this.stratumV2Service?.getAuthorityPublicKey() ? 1 : 0;
+    const topBestDifficulty = Number(highScores?.[0]?.bestDifficulty) || 0;
     const uptimeSeconds = Math.floor((Date.now() - this.uptime.getTime()) / 1000);
     const reward = this.bitcoinRpcService.getNextBlockReward();
 
@@ -229,6 +237,15 @@ export class AppController {
       '# HELP hashsolo_miners_connected Currently connected miner workers',
       '# TYPE hashsolo_miners_connected gauge',
       `hashsolo_miners_connected ${totalMiners}`,
+      '# HELP hashsolo_stratum_v2_miners_connected Currently connected Stratum V2 miner workers',
+      '# TYPE hashsolo_stratum_v2_miners_connected gauge',
+      `hashsolo_stratum_v2_miners_connected ${sv2Miners}`,
+      '# HELP hashsolo_stratum_v2_enabled Whether Stratum V2 listener is active (1=yes, 0=no)',
+      '# TYPE hashsolo_stratum_v2_enabled gauge',
+      `hashsolo_stratum_v2_enabled ${sv2Enabled}`,
+      '# HELP hashsolo_best_difficulty Highest recorded share difficulty on the pool',
+      '# TYPE hashsolo_best_difficulty gauge',
+      `hashsolo_best_difficulty ${topBestDifficulty}`,
       '# HELP hashsolo_pool_hashrate_hs Total pool hashrate in H/s',
       '# TYPE hashsolo_pool_hashrate_hs gauge',
       `hashsolo_pool_hashrate_hs ${totalHashRate}`,
