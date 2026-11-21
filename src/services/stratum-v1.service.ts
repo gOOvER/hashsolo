@@ -1,8 +1,10 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as fs from 'fs';
 import { Server, Socket } from 'net';
 import { monitorEventLoopDelay } from 'perf_hooks';
 import { Subscription } from 'rxjs';
+import * as tls from 'tls';
 
 import { StratumV1Client } from '../models/StratumV1Client';
 import { AddressSettingsService } from '../ORM/address-settings/address-settings.service';
@@ -18,6 +20,7 @@ interface StratumListenerState {
     port: number;
     server: Server | null;
     paused: boolean;
+    tlsOptions?: tls.TlsOptions;
 }
 
 const DEFAULT_BACKPRESSURE_CHECK_INTERVAL_MS = 5000;
@@ -65,6 +68,7 @@ export class StratumV1Service implements OnModuleInit, OnModuleDestroy {
 
         setTimeout(() => {
             this.startSocketServer(this.getStratumPort());
+            this.startOptionalTlsServer();
         }, 1000 * 10);
 
         this.jobKeepAliveSub = this.stratumV1JobsService?.newMiningJob$?.subscribe({ error: () => undefined }) ?? null;
@@ -85,60 +89,90 @@ export class StratumV1Service implements OnModuleInit, OnModuleDestroy {
         }
     }
 
-    private startSocketServer(port: number) {
+    private startSocketServer(port: number, tlsOptions?: tls.TlsOptions) {
         const listener: StratumListenerState = {
             port,
             server: null,
-            paused: false
+            paused: false,
+            tlsOptions
         };
         this.listeners.push(listener);
         this.listen(listener);
     }
 
-    private createSocketServer(): Server {
-        const server = new Server(async (socket: Socket) => {
+    private startOptionalTlsServer() {
+        if (process.env.STRATUM_TLS_ENABLED?.toLowerCase() !== 'true') {
+            return;
+        }
 
-            //5 min
-            socket.setTimeout(1000 * 60 * 5);
+        const certPath = process.env.STRATUM_TLS_CERT_PATH?.trim();
+        const keyPath = process.env.STRATUM_TLS_KEY_PATH?.trim();
+        const caPath = process.env.STRATUM_TLS_CA_PATH?.trim();
+        if (!certPath || !keyPath) {
+            console.error('STRATUM_TLS_ENABLED=true but STRATUM_TLS_CERT_PATH or STRATUM_TLS_KEY_PATH is missing');
+            return;
+        }
 
-            const client = new StratumV1Client(
-                socket,
-                this.stratumV1JobsService,
-                this.bitcoinRpcService,
-                this.clientService,
-                this.clientStatisticsService,
-                this.notificationService,
-                this.blocksService,
-                this.configService,
-                this.addressSettingsService,
-                this.externalSharesService
-            );
+        try {
+            const tlsOptions: tls.TlsOptions = {
+                cert: fs.readFileSync(certPath),
+                key: fs.readFileSync(keyPath),
+                ...(caPath ? { ca: fs.readFileSync(caPath) } : {}),
+                minVersion: 'TLSv1.2'
+            };
+            this.startSocketServer(this.getStratumTlsPort(), tlsOptions);
+        } catch (err: any) {
+            console.error(`Failed to start Stratum TLS listener: ${err?.message ?? err}`);
+        }
+    }
 
+    private handleClientSocket(socket: Socket) {
+        // 5 min
+        socket.setTimeout(1000 * 60 * 5);
 
-            socket.on('close', async (hadError: boolean) => {
-                if (client.extraNonceAndSessionId != null) {
-                    // Handle socket disconnection
-                    await client.destroy();
-                    console.log(`Client ${client.extraNonceAndSessionId} disconnected, hadError?:${hadError}`);
-                }
-            });
+        const client = new StratumV1Client(
+            socket,
+            this.stratumV1JobsService,
+            this.bitcoinRpcService,
+            this.clientService,
+            this.clientStatisticsService,
+            this.notificationService,
+            this.blocksService,
+            this.configService,
+            this.addressSettingsService,
+            this.externalSharesService
+        );
 
-            socket.on('timeout', () => {
-                console.log('socket timeout');
-                socket.end();
-                socket.destroy();
-            });
-
-            socket.on('error', () => undefined);
-
-            //   //console.log(`Client disconnected, socket error,  ${client.extraNonceAndSessionId}`);
-
-
+        socket.on('close', async (hadError: boolean) => {
+            if (client.extraNonceAndSessionId != null) {
+                // Handle socket disconnection
+                await client.destroy();
+                console.log(`Client ${client.extraNonceAndSessionId} disconnected, hadError?:${hadError}`);
+            }
         });
+
+        socket.on('timeout', () => {
+            console.log('socket timeout');
+            socket.end();
+            socket.destroy();
+        });
+
+        socket.on('error', () => undefined);
+    }
+
+    private createSocketServer(tlsOptions?: tls.TlsOptions): Server {
+        const server = tlsOptions
+            ? tls.createServer(tlsOptions, (socket: tls.TLSSocket) => this.handleClientSocket(socket))
+            : new Server((socket: Socket) => this.handleClientSocket(socket));
 
         server.on('error', (err) => {
             console.error(`Server error: ${err.message}`);
         });
+        if (tlsOptions) {
+            server.on('tlsClientError', (err) => {
+                console.warn(`Stratum TLS client error: ${err.message}`);
+            });
+        }
         this.configureConnectionLimit(server);
 
         return server;
@@ -149,12 +183,13 @@ export class StratumV1Service implements OnModuleInit, OnModuleDestroy {
             return;
         }
 
-        const server = this.createSocketServer();
+        const server = this.createSocketServer(listener.tlsOptions);
         listener.server = server;
         listener.paused = false;
 
         server.listen(listener.port, () => {
-            console.log(`Stratum server is listening on port ${listener.port}`);
+            const label = listener.tlsOptions ? 'Stratum TLS' : 'Stratum';
+            console.log(`${label} server is listening on port ${listener.port}`);
         });
     }
 
@@ -279,6 +314,10 @@ export class StratumV1Service implements OnModuleInit, OnModuleDestroy {
 
     private getStratumPort() {
         return this.getPositiveIntegerEnv('STRATUM_PORT', 3333);
+    }
+
+    private getStratumTlsPort() {
+        return this.getPositiveIntegerEnv('STRATUM_TLS_PORT', 4333);
     }
 
     private getPositiveIntegerEnv(key: string, fallback: number) {

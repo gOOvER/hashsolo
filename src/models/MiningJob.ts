@@ -103,6 +103,16 @@ export class MiningJob {
         return bitcoinjs.Transaction.fromBuffer(this.coinbaseTransaction.toBuffer());
     }
 
+    public computeMerkleRoot(extraNonce: string, extraNonce2: string): Buffer {
+        const coinbaseBuffer = Buffer.concat([
+            this.coinbasePart1Buffer,
+            Buffer.from(`${extraNonce}${extraNonce2}`, 'hex'),
+            this.coinbasePart2Buffer,
+        ]);
+        const coinbaseHash = Buffer.from(bitcoinjs.crypto.hash256(coinbaseBuffer));
+        return this.calculateMerkleRootHash(coinbaseHash, this.merkleBranchBuffers);
+    }
+
     public buildHeaderBuffer(jobTemplate: IJobTemplate, versionMask: number, nonce: number, extraNonce: string, extraNonce2: string, timestamp: number): Buffer {
         const coinbaseBuffer = Buffer.concat([
             this.coinbasePart1Buffer,

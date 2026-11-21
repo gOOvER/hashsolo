@@ -28,8 +28,8 @@ RUN npm ci && npm run build && npm prune --omit=dev
 
 FROM node:26-bookworm-slim
 
-# Expose ports for Stratum and Bitcoin RPC
-EXPOSE 3333 3334 8332
+# Expose ports for Stratum V1, Stratum V1 TLS, Stratum V2, API, and Bitcoin RPC
+EXPOSE 3333 3334 4333 8332 23330
 
 WORKDIR /hashsolo
 ENV NODE_COMPILE_CACHE=/tmp/node-compile-cache
