@@ -75,7 +75,7 @@ Because upstream has become largely unmaintained with outdated dependencies and 
 ## 🐳 Dokploy Deployment (Recommended)
 
 Deploy the entire stack (`bitcoind` + `hashsolo` + `hashsolo-ui`) in minutes using **[gOOvER/hashsolo-dokploy](https://github.com/gOOvER/hashsolo-dokploy)**:
-- Preconfigured `pull_policy: always` with native `linux/amd64` GHCR images.
+- Preconfigured `pull_policy: always` with native multi-arch (`linux/amd64` & `linux/arm64`) GHCR images.
 - Built-in Caddy `/api/*` reverse proxy so only one domain is needed.
 
 ---
