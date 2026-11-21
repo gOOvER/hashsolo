@@ -53,7 +53,7 @@ Because upstream has become largely unmaintained with outdated dependencies and 
 
 ## 🚀 Key Improvements in This Fork
 
-- **Modern Runtime & Multi-Arch:** Node.js `26` (`ES2024`, `NODE_COMPILE_CACHE`, native `fetch` & `crypto.hash`), NestJS `12`, TypeORM `1.x` (`better-sqlite3`), `bitcoinjs-lib` `7`, TypeScript `6`, Jest `30`, ESLint `10` — built natively for **`linux/amd64` & `linux/arm64`** (without QEMU).
+- **Modern Runtime & Multi-Arch:** Node.js `26` (`ES2024`, `NODE_COMPILE_CACHE`, native `fetch` & `crypto.hash`), NestJS `12`, TypeORM `1.x` (`better-sqlite3`), `bitcoinjs-lib` `7`, TypeScript `6`, Jest `30`, ESLint `10` — native **`linux/amd64` & `linux/arm64`** Docker images.
 - **Live Node, Miners & Reward Endpoints:**
   - `GET /api/node/status`: Live `bitcoind` sync progress (`blocks`, `headers`, `verificationProgress`, `pruned`, `sizeOnDisk`, `connections`).
   - `GET /api/info/next-block-reward`: Live `coinbasevalue` (`rewardSats`, `subsidySats`, `feeSats`, `height`) from the current block template.
