@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Changed
+- Enabled native multi-arch Docker image builds (`linux/amd64` on `ubuntu-latest` + `linux/arm64` on `ubuntu-24.04-arm`, merged via `docker buildx imagetools create` without QEMU) in `.github/workflows/docker-publish.yml`.
 - Optimized for Node.js 26: bumped `tsconfig.json` `target` to `ES2024`, enabled `NODE_COMPILE_CACHE` and `npm prune --omit=dev` multi-stage runtime copying in `Dockerfile`, switched `StratumV1Client.calculateDifficulty()` to one-shot `crypto.hash('sha256', ...)`, and replaced `@nestjs/axios` in `ExternalSharesService` with native `fetch()` + `AbortSignal.timeout()`.
 
 ## [1.1.0] - 2026-11-21
