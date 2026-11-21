@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+- Added optional **Stratum V1 TLS** (`stratum+ssl://`) listener in `StratumV1Service` (`STRATUM_TLS_ENABLED=false`, `STRATUM_TLS_PORT=4333`, `STRATUM_TLS_CERT_PATH`, `STRATUM_TLS_KEY_PATH`, `STRATUM_TLS_CA_PATH`) sharing `StratumV1Client` and backpressure monitoring.
+- Added optional **Stratum V2** (`STRATUM_V2_ENABLED=false`, `STRATUM_V2_PORT=23330`, `STRATUM_V2_AUTHORITY_PRIVKEY` / `STRATUM_V2_AUTHORITY_KEY_PATH`) with native `Noise_NX_Secp256k1+EllSwift_ChaChaPoly_SHA256` transport (`src/stratum-v2/ellswift.ts`, `src/stratum-v2/noise.ts`), SV2 binary Mining Protocol (`src/stratum-v2/protocol.ts`), `StratumV2Client`, `StratumV2Service`, and unit tests (`src/stratum-v2/stratum-v2.spec.ts`).
+
 ### Fixed
 - Fixed `full-setup/grafana-dashboard.json` for latest Grafana import (`__inputs` `DS_PROMETHEUS`, `annotations`, `templating`, `time`, `datasource` bindings) and corrected Prometheus metric names to match `/api/metrics` (`hashsolo_miners_connected`, `hashsolo_bitcoin_node_blocks`, `hashsolo_bitcoin_node_connections`, `hashsolo_blocks_found_total`, `hashsolo_uptime_seconds`).
 
