@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   bitcoin-testnet:
     container_name: bitcoin-testnet
@@ -28,16 +26,25 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     stop_grace_period: 30s
+    depends_on:
+      bitcoin-testnet:
+        condition: service_started
     networks:
       - bitcoin-testnet
     ports:
       - "0.0.0.0:13333:13333/tcp"
       - "127.0.0.1:13334:13334/tcp"
     volumes:
-      - "./data/testnet/public-pool:/public-pool/DB"
-      - "./public-pool-testnet.env:/public-pool/.env:ro"
+      - "./data/testnet/public-pool:/hashsolo/DB"
+      - "./public-pool-testnet.env:/hashsolo/.env:ro"
     environment:
       - NODE_ENV=production
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:'+(process.env.API_PORT||13334)+'/api/info').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
 
 networks:
   bitcoin-testnet:

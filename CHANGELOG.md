@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Changed
+- Updated `full-setup/` for HashSolo & multi-arch (`amd64`/`arm64`): fixed `/hashsolo/DB` and `/hashsolo/.env` container volume paths + added healthchecks in `docker-compose-*.yml`, upgraded `full-setup/docker/bitcoin/Dockerfile` to Bitcoin Core `28.1` (`TARGETARCH` + `distroless/cc-debian12`), added `regtest` & `chown 1000:1000` in `prepare.sh`, expanded `public-pool-*.env` / `bitcoin-*.conf`, and updated `full-setup/README.md`.
 - Enabled native multi-arch Docker image builds (`linux/amd64` on `ubuntu-latest` + `linux/arm64` on `ubuntu-24.04-arm`, merged via `docker buildx imagetools create` without QEMU) in `.github/workflows/docker-publish.yml`.
 - Optimized for Node.js 26: bumped `tsconfig.json` `target` to `ES2024`, enabled `NODE_COMPILE_CACHE` and `npm prune --omit=dev` multi-stage runtime copying in `Dockerfile`, switched `StratumV1Client.calculateDifficulty()` to one-shot `crypto.hash('sha256', ...)`, and replaced `@nestjs/axios` in `ExternalSharesService` with native `fetch()` + `AbortSignal.timeout()`.
 
