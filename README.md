@@ -3,7 +3,7 @@
 
   # ⛏️ HashSolo
 
-  **Hardened, High-Performance Bitcoin Solo Mining Pool (Stratum V1) on Node.js 26**
+  **Hardened, High-Performance Bitcoin Solo Mining Pool (Stratum V1 / TLS / V2) on Node.js 26**
 
   [![CI](https://github.com/gOOvER/hashsolo/actions/workflows/ci.yml/badge.svg)](https://github.com/gOOvER/hashsolo/actions/workflows/ci.yml)
   [![Docker Build & Publish](https://github.com/gOOvER/hashsolo/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/gOOvER/hashsolo/actions/workflows/docker-publish.yml)
@@ -31,7 +31,9 @@ Because upstream has become largely unmaintained with outdated dependencies and 
 > ### ⚡ Mine Live Now on **[hashsolo.goover.dev](https://hashsolo.goover.dev)**!
 > Want to solo-mine Bitcoin right away without running a local node? Point a **Bitaxe**, **NerdMiner**, **NMMiner**, **Antminer**, or **ASIC** straight to the public instance:
 > - **Web Dashboard:** [https://hashsolo.goover.dev](https://hashsolo.goover.dev)
-> - **Stratum V1 URL:** `stratum+tcp://hashsolo.goover.dev:3333` (Password: `x`)
+> - **Stratum V1 (TCP):** `stratum+tcp://stratum.goover.dev:3333` (Password: `x`)
+> - **Stratum V1 + TLS:** `stratum+tls://stratum.goover.dev:4333` (Let's Encrypt)
+> - **Stratum V2 (`Noise_NX`):** `stratum2+tcp://stratum.goover.dev:23330` *(Authority Key shown on the landing page)*
 > - **Built for Everyone:** `STRATUM_START_DIFF=0.001` (ideal for KH/s & MH/s ESP miners as well as TH/s ASICs), **0% fee** below 50 TH/s, live node sync & reward stats, and instant **Telegram / ntfy** alerts.
 
 > [!NOTE]
@@ -59,7 +61,8 @@ Because upstream has become largely unmaintained with outdated dependencies and 
   - `GET /api/info/next-block-reward`: Live `coinbasevalue` (`rewardSats`, `subsidySats`, `feeSats`, `height`) from the current block template.
   - `GET /api/info/miners`: Live list of all active connected miner sessions (device, worker, masked address, session ID, hashrate, best difficulty, timestamps).
   - `GET /api/info/accounting`: Live Solo Mining metrics (best difficulty, total/1h/10m credited work, and 10m/1h hashrates).
-  - `GET /api/metrics`: Prometheus text exposition endpoint for Grafana/Prometheus monitoring.
+  - `GET /api/metrics` & `GET /metrics`: Prometheus text exposition endpoint (including `hashsolo_stratum_v2_enabled`, `hashsolo_stratum_v2_miners_connected`, and `hashsolo_best_difficulty`) for Grafana/Prometheus monitoring.
+  - `GET /api/info`: Includes dynamic `fee`, `version`, `network`, and active `sv2.poolAuthorityPublicKey`.
 - **Dynamic Fee Reporting:** `/api/info` and `/api/pool` expose `fee` dynamically (`1.5` when `DEV_FEE_ADDRESS` is configured for miners `>= 50 TH/s`, `0` otherwise).
 - **Notifications & Bot Commands:**
   - **Discord Bot (Components V2 + PNG Charts):** Full slash commands (`/pool`, `/node`, `/stats`, `/workers`, `/chart`, `/subscribe`, `/unsubscribe`) with interactive refresh buttons, live hashrate/miner watching presence, locally rendered dark-mode PNG hashrate charts (`@resvg/resvg-js`), persistent `discord_subscriptions`, and Components V2 alerts for blocks, best difficulty, worker online/offline, and restarts.
@@ -110,6 +113,13 @@ npm run lint
 - Behind a reverse proxy (Dokploy / Traefik / Caddy / Nginx), keep `API_SECURE=false` and let the proxy terminate HTTPS.
 - **Optional Stratum V1 TLS (`stratum+ssl://`):** Set `STRATUM_TLS_ENABLED=true` (default port `4333` via `STRATUM_TLS_PORT`), `STRATUM_TLS_CERT_PATH`, and `STRATUM_TLS_KEY_PATH` (optional `STRATUM_TLS_CA_PATH`).
 - **Optional Stratum V2 (`stratum2+tcp://`):** Set `STRATUM_V2_ENABLED=true` (default port `23330` via `STRATUM_V2_PORT`). Uses native `Noise_NX_Secp256k1+EllSwift_ChaChaPoly_SHA256` encryption and persists/prints the Base58Check Authority Public Key (`STRATUM_V2_AUTHORITY_KEY_PATH=./DB/sv2-authority.key` or `STRATUM_V2_AUTHORITY_PRIVKEY`).
+
+---
+
+## 🙏 Upstream & Fork Attribution
+
+**HashSolo** is an independent, actively maintained open-source (**GPL-3.0**) fork of [`benjamin-wilson/public-pool`](https://github.com/benjamin-wilson/public-pool).  
+While upstream `public-pool` laid the foundation for self-hosted solo mining, its dependencies and codebase have seen limited updates. HashSolo keeps the project alive with modern **Node.js 26 / NestJS 12 / Angular 22** runtimes, security hardening, bug fixes, optional **Stratum V1 TLS** & native **Stratum V2**, and full **Dokploy / Prometheus / Grafana** support.
 
 ---
 
