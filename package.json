@@ -33,7 +33,7 @@
     "@nestjs/typeorm": "^12.0.3",
     "@resvg/resvg-js": "^2.6.2",
     "axios": "^1.21.1",
-    "better-sqlite3": "^12.11.1",
+    "better-sqlite3": "^13.2.0",
     "bitcoin-address-validation": "^4.0.0",
     "bitcoinjs-lib": "^7.0.5",
     "bs58": "^6.0.0",
