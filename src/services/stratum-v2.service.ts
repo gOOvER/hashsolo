@@ -15,6 +15,9 @@ import { BitcoinRpcService } from './bitcoin-rpc.service';
 import { ExternalSharesService } from './external-shares.service';
 import { NotificationService } from './notification.service';
 import { StratumV1JobsService } from './stratum-v1-jobs.service';
+import { getNonNegativeIntEnv, IpConnectionLimiter, normalizeRemoteIp } from './stratum-rate-limit.util';
+
+const DEFAULT_MAX_CONNECTIONS_PER_IP = 100;
 
 @Injectable()
 export class StratumV2Service implements OnModuleInit, OnModuleDestroy {
@@ -22,6 +25,9 @@ export class StratumV2Service implements OnModuleInit, OnModuleDestroy {
     private authorityPrivKey: Buffer | null = null;
     private authorityPublicKeyEncoded: string | null = null;
     private staticKeyPair: { privateKey: Buffer; xOnlyPublicKey: Buffer } | null = null;
+    private readonly ipConnectionLimiter = new IpConnectionLimiter(
+        getNonNegativeIntEnv(process.env.STRATUM_MAX_CONNECTIONS_PER_IP, DEFAULT_MAX_CONNECTIONS_PER_IP),
+    );
 
     constructor(
         private readonly bitcoinRpcService: BitcoinRpcService,
@@ -66,6 +72,21 @@ export class StratumV2Service implements OnModuleInit, OnModuleDestroy {
         }
 
         const server = new Server((socket: Socket) => {
+            const remoteIp = normalizeRemoteIp(socket.remoteAddress);
+            if (!this.ipConnectionLimiter.tryAcquire(remoteIp)) {
+                console.warn(`Closing SV2 socket from ${remoteIp}: per-IP connection limit reached`);
+                socket.destroy();
+                return;
+            }
+
+            let released = false;
+            const releaseIp = () => {
+                if (!released) {
+                    released = true;
+                    this.ipConnectionLimiter.release(remoteIp);
+                }
+            };
+
             socket.setTimeout(1000 * 60 * 5);
             const client = new StratumV2Client(
                 socket,
@@ -83,6 +104,7 @@ export class StratumV2Service implements OnModuleInit, OnModuleDestroy {
             );
 
             socket.on('close', async (hadError: boolean) => {
+                releaseIp();
                 await client.destroy();
                 console.log(`SV2 Client ${client.extraNonceAndSessionId} disconnected, hadError?:${hadError}`);
             });

@@ -69,6 +69,7 @@ export class StratumV1Client {
     private messageQueue: Promise<void> = Promise.resolve();
     private connectionClosed = false;
     private lastSentMiningJobTimestamp: number = null;
+    private invalidMessageCount = 0;
 
     private miningSubmissionHashes = new Set<string>()
 
@@ -183,6 +184,25 @@ export class StratumV1Client {
     }
 
 
+    private getMaxInvalidMessages(): number {
+        const parsed = parseInt(this.configService.get<string>('STRATUM_MAX_INVALID_MESSAGES') ?? '', 10);
+        return Number.isFinite(parsed) && parsed >= 0 ? parsed : 20;
+    }
+
+    private recordInvalidMessage(reason: string): boolean {
+        const maxInvalid = this.getMaxInvalidMessages();
+        if (maxInvalid <= 0) {
+            return false;
+        }
+        this.invalidMessageCount += 1;
+        if (this.invalidMessageCount >= maxInvalid) {
+            console.warn(`Closing socket (${this.extraNonceAndSessionId ?? this.socket.remoteAddress}) after ${this.invalidMessageCount} invalid messages (${reason})`);
+            this.closeSocket();
+            return true;
+        }
+        return false;
+    }
+
     private async handleMessage(message: string) {
         //console.log(`Received from ${this.extraNonceAndSessionId}`, message);
 
@@ -248,6 +268,9 @@ export class StratumV1Client {
                     if (!success) {
                         return;
                     }
+                    if (this.recordInvalidMessage('subscribe validation error')) {
+                        return;
+                    }
                 }
 
                 break;
@@ -284,6 +307,9 @@ export class StratumV1Client {
                     console.error(err);
                     const success = await this.write(err);
                     if (!success) {
+                        return;
+                    }
+                    if (this.recordInvalidMessage('configure validation error')) {
                         return;
                     }
                 }
@@ -332,6 +358,9 @@ export class StratumV1Client {
                     if (!success) {
                         return;
                     }
+                    if (this.recordInvalidMessage('authorize validation error')) {
+                        return;
+                    }
                 }
 
                 break;
@@ -374,6 +403,9 @@ export class StratumV1Client {
                     if (!success) {
                         return;
                     }
+                    if (this.recordInvalidMessage('suggest_difficulty validation error')) {
+                        return;
+                    }
                 }
                 break;
             }
@@ -414,12 +446,12 @@ export class StratumV1Client {
                 }
                 break;
             }
-            // default: {
-            //     console.log("Invalid message");
-            //     console.log(parsedMessage);
-            //     await this.socket.end();
-            //     return;
-            // }
+            default: {
+                if (this.recordInvalidMessage(`unknown method: ${String(parsedMessage.method)}`)) {
+                    return;
+                }
+                break;
+            }
         }
 
 

@@ -1,5 +1,5 @@
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Controller, Get, Header, Inject, Optional } from '@nestjs/common';
+import { Controller, Get, Header, Headers, Inject, Optional, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cache } from 'cache-manager';
 import { firstValueFrom } from 'rxjs';
@@ -9,6 +9,7 @@ import { BlocksService } from './ORM/blocks/blocks.service';
 import { ClientStatisticsService } from './ORM/client-statistics/client-statistics.service';
 import { ClientService } from './ORM/client/client.service';
 import { BitcoinRpcService } from './services/bitcoin-rpc.service';
+import { isAuthorizedMetricsRequest } from './services/stratum-rate-limit.util';
 import { StratumV2Service } from './services/stratum-v2.service';
 
 @Controller()
@@ -211,7 +212,10 @@ export class AppController {
 
   @Get('metrics')
   @Header('Content-Type', 'text/plain; version=0.0.4; charset=utf-8')
-  public async metrics(): Promise<string> {
+  public async metrics(@Headers('authorization') authHeader?: string): Promise<string> {
+    if (!isAuthorizedMetricsRequest(authHeader, this.configService.get<string>('METRICS_BEARER_TOKEN'))) {
+      throw new UnauthorizedException('Invalid or missing metrics bearer token');
+    }
     const [userAgents, blocksFound, highScores, nodeInfo, networkInfo] = await Promise.all([
       this.clientService.getUserAgents(),
       this.blocksService.getFoundBlocks(),

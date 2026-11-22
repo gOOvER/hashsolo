@@ -15,6 +15,7 @@ import { BitcoinRpcService } from './bitcoin-rpc.service';
 import { ExternalSharesService } from './external-shares.service';
 import { NotificationService } from './notification.service';
 import { StratumV1JobsService } from './stratum-v1-jobs.service';
+import { getNonNegativeIntEnv, IpConnectionLimiter, normalizeRemoteIp } from './stratum-rate-limit.util';
 
 interface StratumListenerState {
     port: number;
@@ -30,6 +31,7 @@ const DEFAULT_BACKPRESSURE_RSS_MB = 2500;
 const DEFAULT_BACKPRESSURE_RESUME_RSS_MB = 2000;
 const DEFAULT_BACKPRESSURE_HEALTHY_CHECKS = 3;
 const DEFAULT_MAX_CONNECTIONS_PER_LISTENER = 10000;
+const DEFAULT_MAX_CONNECTIONS_PER_IP = 100;
 
 
 @Injectable()
@@ -37,6 +39,9 @@ export class StratumV1Service implements OnModuleInit, OnModuleDestroy {
 
     private readonly listeners: StratumListenerState[] = [];
     private readonly eventLoopDelay = monitorEventLoopDelay({ resolution: 20 });
+    private readonly ipConnectionLimiter = new IpConnectionLimiter(
+        getNonNegativeIntEnv(process.env.STRATUM_MAX_CONNECTIONS_PER_IP, DEFAULT_MAX_CONNECTIONS_PER_IP),
+    );
     private backpressureMonitor: NodeJS.Timeout | null = null;
     private jobKeepAliveSub: Subscription | null = null;
     private healthyBackpressureChecks = 0;
@@ -127,6 +132,21 @@ export class StratumV1Service implements OnModuleInit, OnModuleDestroy {
     }
 
     private handleClientSocket(socket: Socket) {
+        const remoteIp = normalizeRemoteIp(socket.remoteAddress);
+        if (!this.ipConnectionLimiter.tryAcquire(remoteIp)) {
+            console.warn(`Closing Stratum socket from ${remoteIp}: per-IP connection limit reached`);
+            socket.destroy();
+            return;
+        }
+
+        let released = false;
+        const releaseIp = () => {
+            if (!released) {
+                released = true;
+                this.ipConnectionLimiter.release(remoteIp);
+            }
+        };
+
         // 5 min
         socket.setTimeout(1000 * 60 * 5);
 
@@ -144,6 +164,7 @@ export class StratumV1Service implements OnModuleInit, OnModuleDestroy {
         );
 
         socket.on('close', async (hadError: boolean) => {
+            releaseIp();
             if (client.extraNonceAndSessionId != null) {
                 // Handle socket disconnection
                 await client.destroy();
