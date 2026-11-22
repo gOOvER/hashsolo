@@ -119,8 +119,10 @@ npm run lint
 
 ## 🙏 Upstream & Fork Attribution
 
-**HashSolo** is an independent, actively maintained open-source (**GPL-3.0**) fork of [`benjamin-wilson/public-pool`](https://github.com/benjamin-wilson/public-pool).  
+**HashSolo** is an actively maintained, hardened open-source (**GPL-3.0**) fork of [`benjamin-wilson/public-pool`](https://github.com/benjamin-wilson/public-pool).  
 While upstream `public-pool` laid the foundation for self-hosted solo mining, its dependencies and codebase have seen limited updates. HashSolo keeps the project alive with modern **Node.js 26 / NestJS 12 / Angular 22** runtimes, security hardening, bug fixes, optional **Stratum V1 TLS** & native **Stratum V2**, and full **Dokploy / Prometheus / Grafana** support.
+
+See [CONTRIBUTORS.md](CONTRIBUTORS.md) for upstream author credits, referenced PR attributions, and historical contributors.
 
 ---
 
