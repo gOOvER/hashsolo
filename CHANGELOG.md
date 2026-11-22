@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Security
 - Hardened the final Docker runtime image in `Dockerfile` by applying OS security upgrades (`apt-get upgrade -y`), removing unused global `npm`/`npx` packages (eliminating 19 Trivy CVEs in bundled `undici`/`brace-expansion`/`minimatch`/`glob`/`ip-address`/`postcss-selector-parser`), and excluding `secrets/` in `.dockerignore`.
+- Enabled `ignore-unfixed: true` in `.github/workflows/trivy-analysis.yml` so unpatched upstream Debian OS CVEs are filtered from Code Scanning.
 
 ## [1.2.0] - 2026-11-21
 
