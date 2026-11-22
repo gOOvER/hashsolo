@@ -113,6 +113,7 @@ npm run lint
 - Behind a reverse proxy (Dokploy / Traefik / Caddy / Nginx), keep `API_SECURE=false` and let the proxy terminate HTTPS.
 - **Optional Stratum V1 TLS (`stratum+ssl://`):** Set `STRATUM_TLS_ENABLED=true` (default port `4333` via `STRATUM_TLS_PORT`), `STRATUM_TLS_CERT_PATH`, and `STRATUM_TLS_KEY_PATH` (optional `STRATUM_TLS_CA_PATH`).
 - **Optional Stratum V2 (`stratum2+tcp://`):** Set `STRATUM_V2_ENABLED=true` (default port `23330` via `STRATUM_V2_PORT`). Uses native `Noise_NX_Secp256k1+EllSwift_ChaChaPoly_SHA256` encryption and persists/prints the Base58Check Authority Public Key (`STRATUM_V2_AUTHORITY_KEY_PATH=./DB/sv2-authority.key` or `STRATUM_V2_AUTHORITY_PRIVKEY`).
+- **Security & Rate Limiting:** `STRATUM_MAX_CONNECTIONS_PER_IP` (default `100`), `STRATUM_MAX_INVALID_MESSAGES` (default `20`), `API_RATE_LIMIT_MAX` (`120` req / `API_RATE_LIMIT_WINDOW_MS=60000` ms, `0` disables), and optional `METRICS_BEARER_TOKEN` for `/metrics` & `/api/metrics`.
 
 ---
 

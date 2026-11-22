@@ -9,11 +9,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 - Added `AGENTS.md` documenting backend architecture, build/test commands, ENV configurability, and security conventions.
 - Exposed standard Prometheus `/metrics` endpoint alias in `main.ts` alongside `/api/metrics`.
+- Added configurable Stratum & HTTP security controls (`STRATUM_MAX_CONNECTIONS_PER_IP=100`, `STRATUM_MAX_INVALID_MESSAGES=20`, `API_RATE_LIMIT_MAX=120`, `API_RATE_LIMIT_WINDOW_MS=60000`, `METRICS_BEARER_TOKEN`).
 
 ### Changed
 - Updated `actions/checkout` to `v7` in `.github/workflows/codeql.yml` so all backend workflows use consistent action versions.
 
 ### Security
+- Added per-IP concurrent connection limiting (`IpConnectionLimiter`) across Stratum V1 (`tcp` & `tls`) and Stratum V2 listeners, plus invalid-message flood auto-disconnect in `StratumV1Client` and unit tests (`src/services/stratum-rate-limit.util.spec.ts`).
+- Added bounded in-memory HTTP API rate limiting in `main.ts` (exempting `/metrics` & `/api/metrics`) and optional timing-safe `METRICS_BEARER_TOKEN` authentication on `/metrics` & `/api/metrics`.
+- Added `actions/attest-build-provenance@v4` to `.github/workflows/docker-publish.yml` for multi-arch GHCR image provenance attestation.
 - Added GitHub **CodeQL** static analysis workflow (`.github/workflows/codeql.yml` for `javascript-typescript`).
 - Pinned `minimatch` (`^11.0.1`) and `glob` (`^14.0.6`) in `package.json` `overrides` to resolve Dependabot alert `#2` (`GHSA-g3hv-75wg-m249`) and `GHSA-3g3m-2fjr-6pw4` (`npm audit` = 0 vulnerabilities).
 - Hardened the final Docker runtime image in `Dockerfile` by applying OS security upgrades (`apt-get upgrade -y`), removing unused global `npm`/`npx` packages (eliminating 19 Trivy CVEs in bundled `undici`/`brace-expansion`/`minimatch`/`glob`/`ip-address`/`postcss-selector-parser`), and excluding `secrets/` in `.dockerignore`.
