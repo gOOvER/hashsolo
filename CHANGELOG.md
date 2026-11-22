@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 - Exposed standard Prometheus `/metrics` endpoint alias in `main.ts` alongside `/api/metrics`.
+- Added explicit upstream PR contributor credits (`@mutatrum`, `@sebrandon1`, `@michaeltg17`, `@GitGab19`, `@swordfish6975`) for adapted/inspired fixes from `benjamin-wilson/public-pool` (`#161`, `#162`, `#163`, `#175`, `#172`, `#108`, `#83`).
 
 ## [1.2.0] - 2026-11-21
 
