@@ -10,6 +10,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added `AGENTS.md` documenting backend architecture, build/test commands, ENV configurability, and security conventions.
 - Exposed standard Prometheus `/metrics` endpoint alias in `main.ts` alongside `/api/metrics`.
 
+### Changed
+- Updated `actions/checkout` to `v7` in `.github/workflows/codeql.yml` so all backend workflows use consistent action versions.
+
 ### Security
 - Added GitHub **CodeQL** static analysis workflow (`.github/workflows/codeql.yml` for `javascript-typescript`).
 - Pinned `minimatch` (`^11.0.1`) and `glob` (`^14.0.6`) in `package.json` `overrides` to resolve Dependabot alert `#2` (`GHSA-g3hv-75wg-m249`) and `GHSA-3g3m-2fjr-6pw4` (`npm audit` = 0 vulnerabilities).
