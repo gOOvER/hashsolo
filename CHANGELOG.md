@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Exposed standard Prometheus `/metrics` endpoint alias in `main.ts` alongside `/api/metrics`.
 
 ### Security
+- Added GitHub **CodeQL** static analysis workflow (`.github/workflows/codeql.yml` for `javascript-typescript`).
 - Pinned `minimatch` (`^11.0.1`) and `glob` (`^14.0.6`) in `package.json` `overrides` to resolve Dependabot alert `#2` (`GHSA-g3hv-75wg-m249`) and `GHSA-3g3m-2fjr-6pw4` (`npm audit` = 0 vulnerabilities).
 - Hardened the final Docker runtime image in `Dockerfile` by applying OS security upgrades (`apt-get upgrade -y`), removing unused global `npm`/`npx` packages (eliminating 19 Trivy CVEs in bundled `undici`/`brace-expansion`/`minimatch`/`glob`/`ip-address`/`postcss-selector-parser`), and excluding `secrets/` in `.dockerignore`.
 - Enabled `ignore-unfixed: true` in `.github/workflows/trivy-analysis.yml` so unpatched upstream Debian OS CVEs are filtered from Code Scanning.
