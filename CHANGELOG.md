@@ -9,6 +9,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 - Exposed standard Prometheus `/metrics` endpoint alias in `main.ts` alongside `/api/metrics`.
 
+### Security
+- Hardened the final Docker runtime image in `Dockerfile` by applying OS security upgrades (`apt-get upgrade -y`), removing unused global `npm`/`npx` packages (eliminating 19 Trivy CVEs in bundled `undici`/`brace-expansion`/`minimatch`/`glob`/`ip-address`/`postcss-selector-parser`), and excluding `secrets/` in `.dockerignore`.
+
 ## [1.2.0] - 2026-11-21
 
 ### Added

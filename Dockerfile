@@ -39,7 +39,12 @@ COPY --from=build /build/package.json ./package.json
 COPY --from=build /build/dist ./dist
 COPY --from=build /build/node_modules ./node_modules
 
-RUN mkdir -p /hashsolo/DB && chown -R node:node /hashsolo
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
+       /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx \
+    && mkdir -p /hashsolo/DB && chown -R node:node /hashsolo
 USER node
 
 CMD ["/usr/local/bin/node", "dist/main"]
