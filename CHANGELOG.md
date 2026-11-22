@@ -8,7 +8,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 - Exposed standard Prometheus `/metrics` endpoint alias in `main.ts` alongside `/api/metrics`.
-- Added explicit upstream PR contributor credits (`@mutatrum`, `@sebrandon1`, `@michaeltg17`, `@GitGab19`, `@swordfish6975`) for adapted/inspired fixes from `benjamin-wilson/public-pool` (`#161`, `#162`, `#163`, `#175`, `#172`, `#108`, `#83`).
 
 ## [1.2.0] - 2026-11-21
 
@@ -66,8 +65,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 - Cleared stale active `ClientEntity` sessions (`clientService.deleteAll()` soft-delete) on startup in `AppService.onModuleInit()` and shortened the `killDeadClients()` sweep interval from 5 minutes to 1 minute so container restarts never leave duplicate phantom worker sessions.
-- Fixed `SubscriptionMessage.refineUserAgent()` matching `bosminer`/`bOS`/`cpuminer` before truncating at `-`/`/`/`V`/space so newer Braiins OS user agents (`2026-...;bosminer...`) report as `Braiins OS` instead of `2026`, and bare version/date prefixes fall back to the first whole token (`Vnish/1.2` -> `Vnish`).
-- Added `isNewPrevHash` detection in `StratumV1JobsService` so block reorgs at the same height also trigger `clearJobs = true`.
+- Fixed `SubscriptionMessage.refineUserAgent()` matching `bosminer`/`bOS`/`cpuminer` before truncating at `-`/`/`/`V`/space so newer Braiins OS user agents (`2026-...;bosminer...`) report as `Braiins OS` instead of `2026`, and bare version/date prefixes fall back to the first whole token (`Vnish/1.2` -> `Vnish`) ([upstream #175](https://github.com/benjamin-wilson/public-pool/pull/175)).
+- Added `isNewPrevHash` detection in `StratumV1JobsService` so block reorgs at the same height also trigger `clearJobs = true` ([upstream #162](https://github.com/benjamin-wilson/public-pool/pull/162)).
 - Clamped initial first-slot `StratumV1ClientStatistics` hashrate denominator to at least 60 seconds when `previousShares === 0` to prevent startup hashrate spikes from early shares.
 - Fixed `StratumV1JobsService` `merkle_branch` serialization for `bitcoinjs-lib` v7 (`Uint8Array` -> `Buffer.from(...)` so `mining.notify` sends 64-char hex hashes instead of comma-separated decimal byte strings).
 - Persisted `ClientEntity` immediately on `mining.authorize` in `StratumV1Client` so newly connected miners appear in the UI before submitting their first share.
@@ -88,7 +87,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Removed redundant unique index on `ClientEntity` primary key columns.
 
 ### Changed
-- Enabled HTTP/HTTPS `keepAlive` agents on `BitcoinRpcService` and subscribed ZMQ to both `hashblock` (45-byte notifications) and `rawblock` (backward compatibility).
+- Enabled HTTP/HTTPS `keepAlive` agents on `BitcoinRpcService` and subscribed ZMQ to both `hashblock` (45-byte notifications) and `rawblock` (backward compatibility) ([upstream #161](https://github.com/benjamin-wilson/public-pool/pull/161), [upstream #163](https://github.com/benjamin-wilson/public-pool/pull/163)).
 - Computed `fee` dynamically (`1.5` when `DEV_FEE_ADDRESS` is configured, `0` otherwise) in `/api/info` and `/api/pool`.
 - Set Node.js 26 as the default runtime (`Dockerfile` updated to `node:26-bookworm-slim`, `package.json` `engines.node` set to `>=26.0.0`, `@types/node` updated to `^26.6.6`).
 - Upgraded major dependencies: NestJS 12 (`@nestjs/*@^12.x`), TypeORM 1.x (`^1.1.3`) with `better-sqlite3` (`12.11.1`, replacing `sqlite3`), `bitcoinjs-lib@^7.0.5` (`Uint8Array`/`bigint` API), `bitcoin-address-validation@^4.0.0`, `bs58@^6.0.0`, `TypeScript@^6.0.0`, `Jest@^30.5.2` (with `--experimental-vm-modules`), `ESLint@^10.15.0` + `@typescript-eslint/*@^8.73.0` (migrated to `eslint.config.mjs`), `@types/express@^5.0.6`, `zeromq@^6.8.0`, `axios@^1.21.1`, `discord.js@^14.28.1`, and `class-validator@^0.15.1`.
