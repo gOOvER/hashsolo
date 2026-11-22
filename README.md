@@ -121,6 +121,14 @@ npm run lint
 **HashSolo** is an independent, actively maintained open-source (**GPL-3.0**) fork of [`benjamin-wilson/public-pool`](https://github.com/benjamin-wilson/public-pool).  
 While upstream `public-pool` laid the foundation for self-hosted solo mining, its dependencies and codebase have seen limited updates. HashSolo keeps the project alive with modern **Node.js 26 / NestJS 12 / Angular 22** runtimes, security hardening, bug fixes, optional **Stratum V1 TLS** & native **Stratum V2**, and full **Dokploy / Prometheus / Grafana** support.
 
+### Community PR Credits (Adapted for HashSolo)
+Full credit to the original upstream contributors whose open PRs inspired or were adapted into HashSolo's Node 26 / NestJS 12 codebase:
+- [`@mutatrum`](https://github.com/mutatrum) — ZMQ `hashblock`, block propagation / reorg `cleanJobs`, and RPC HTTP keep-alive ([`#161`](https://github.com/benjamin-wilson/public-pool/pull/161), [`#162`](https://github.com/benjamin-wilson/public-pool/pull/162), [`#163`](https://github.com/benjamin-wilson/public-pool/pull/163))
+- [`@sebrandon1`](https://github.com/sebrandon1) — Braiins OS user-agent parsing ([`#175`](https://github.com/benjamin-wilson/public-pool/pull/175))
+- [`@michaeltg17`](https://github.com/michaeltg17) — Non-root `node` Docker user ([`#172`](https://github.com/benjamin-wilson/public-pool/pull/172))
+- [`@GitGab19`](https://github.com/GitGab19) — Configurable session difficulty via ENV ([`#108`](https://github.com/benjamin-wilson/public-pool/pull/108))
+- [`@swordfish6975`](https://github.com/swordfish6975) — Best-difficulty notifications ([`#83`](https://github.com/benjamin-wilson/public-pool/pull/83))
+
 ---
 
 ## 💝 Support
