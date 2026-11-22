@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- Added `CONTRIBUTORS.md` (linked from `README.md`) crediting `@benjamin-wilson`, upstream PR/issue authors (`@mutatrum`, `@sebrandon1`, `@mweinberg`), and historical git contributors.
 - Added `AGENTS.md` documenting backend architecture, build/test commands, ENV configurability, and security conventions.
 - Exposed standard Prometheus `/metrics` endpoint alias in `main.ts` alongside `/api/metrics`.
 - Added configurable Stratum & HTTP security controls (`STRATUM_MAX_CONNECTIONS_PER_IP=100`, `STRATUM_MAX_INVALID_MESSAGES=20`, `API_RATE_LIMIT_MAX=120`, `API_RATE_LIMIT_WINDOW_MS=60000`, `METRICS_BEARER_TOKEN`).
