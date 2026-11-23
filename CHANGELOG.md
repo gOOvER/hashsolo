@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-23
+
 ### Added
 - Added `CONTRIBUTORS.md` (linked from `README.md`) crediting `@benjamin-wilson`, upstream PR/issue authors (`@mutatrum`, `@sebrandon1`, `@mweinberg`), and historical git contributors.
 - Added extended Prometheus metrics (`hashsolo_shares_accepted_total`, `hashsolo_shares_rejected_total`, `hashsolo_stratum_connections_rejected_total`, `hashsolo_block_template_age_seconds`, `hashsolo_zmq_last_message_seconds`) in `AppController.metrics()` via `poolMetrics` (`src/services/pool-metrics.util.ts`).
