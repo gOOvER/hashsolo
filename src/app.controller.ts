@@ -1,14 +1,15 @@
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Controller, Get, Header, Headers, Inject, Optional, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Header, Headers, Inject, MessageEvent, Optional, Sse, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cache } from 'cache-manager';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, interval, map, merge, Observable } from 'rxjs';
 
 import { AddressSettingsService } from './ORM/address-settings/address-settings.service';
 import { BlocksService } from './ORM/blocks/blocks.service';
 import { ClientStatisticsService } from './ORM/client-statistics/client-statistics.service';
 import { ClientService } from './ORM/client/client.service';
 import { BitcoinRpcService } from './services/bitcoin-rpc.service';
+import { poolMetrics } from './services/pool-metrics.util';
 import { isAuthorizedMetricsRequest } from './services/stratum-rate-limit.util';
 import { StratumV2Service } from './services/stratum-v2.service';
 
@@ -276,10 +277,54 @@ export class AppController {
       `hashsolo_bitcoin_node_connections ${networkInfo?.connections ?? 0}`,
       '# HELP hashsolo_next_block_reward_sats Next block coinbase reward in satoshis',
       '# TYPE hashsolo_next_block_reward_sats gauge',
-      `hashsolo_next_block_reward_sats ${reward?.rewardSats ?? 0}`
+      `hashsolo_next_block_reward_sats ${reward?.rewardSats ?? 0}`,
+      ...this.buildExtendedMetricsLines()
     ];
 
     return `${lines.join('\n')}\n`;
+  }
+
+  private buildExtendedMetricsLines(): string[] {
+    const snap = poolMetrics.getSnapshot();
+    return [
+      '# HELP hashsolo_shares_accepted_total Total accepted miner shares',
+      '# TYPE hashsolo_shares_accepted_total counter',
+      `hashsolo_shares_accepted_total ${snap.sharesAcceptedTotal}`,
+      '# HELP hashsolo_shares_rejected_total Total rejected miner shares by reason',
+      '# TYPE hashsolo_shares_rejected_total counter',
+      `hashsolo_shares_rejected_total{reason="stale"} ${snap.sharesRejected.stale}`,
+      `hashsolo_shares_rejected_total{reason="duplicate"} ${snap.sharesRejected.duplicate}`,
+      `hashsolo_shares_rejected_total{reason="low_diff"} ${snap.sharesRejected.low_diff}`,
+      `hashsolo_shares_rejected_total{reason="invalid"} ${snap.sharesRejected.invalid}`,
+      '# HELP hashsolo_stratum_connections_rejected_total Total rejected Stratum connections by reason',
+      '# TYPE hashsolo_stratum_connections_rejected_total counter',
+      `hashsolo_stratum_connections_rejected_total{reason="ip_limit"} ${snap.connectionsRejected.ip_limit}`,
+      `hashsolo_stratum_connections_rejected_total{reason="invalid_messages"} ${snap.connectionsRejected.invalid_messages}`,
+      `hashsolo_stratum_connections_rejected_total{reason="user_agent"} ${snap.connectionsRejected.user_agent}`,
+      '# HELP hashsolo_block_template_age_seconds Age in seconds since last block template was built (-1 if none)',
+      '# TYPE hashsolo_block_template_age_seconds gauge',
+      `hashsolo_block_template_age_seconds ${snap.templateAgeSeconds}`,
+      '# HELP hashsolo_zmq_last_message_seconds Seconds since last Bitcoin ZMQ notification (-1 if none)',
+      '# TYPE hashsolo_zmq_last_message_seconds gauge',
+      `hashsolo_zmq_last_message_seconds ${snap.zmqLastMessageSeconds}`
+    ];
+  }
+
+  @Sse('stream')
+  public stream(): Observable<MessageEvent> {
+    const events$ = poolMetrics.events$.pipe(
+      map((event) => ({
+        type: event.type,
+        data: event,
+      }) as MessageEvent),
+    );
+    const heartbeat$ = interval(15_000).pipe(
+      map(() => ({
+        type: 'heartbeat',
+        data: { timestamp: new Date().toISOString() },
+      }) as MessageEvent),
+    );
+    return merge(events$, heartbeat$);
   }
 
   private getPoolFeePercent(): number {

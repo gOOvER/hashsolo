@@ -28,6 +28,7 @@ import { EXTRANONCE1_SIZE_BYTES, EXTRANONCE2_SIZE_BYTES } from './stratum.consta
 import { SuggestDifficulty } from './stratum-messages/SuggestDifficultyMessage';
 import { StratumV1ClientStatistics } from './StratumV1ClientStatistics';
 import { ExternalSharesService } from '../services/external-shares.service';
+import { poolMetrics } from '../services/pool-metrics.util';
 
 const TRUE_DIFF_ONE = 2.695953529101131e67;
 const BLOCKED_USER_AGENT_LOG_INTERVAL_MS = 60 * 1000;
@@ -196,6 +197,7 @@ export class StratumV1Client {
         }
         this.invalidMessageCount += 1;
         if (this.invalidMessageCount >= maxInvalid) {
+            poolMetrics.recordConnectionRejected('invalid_messages');
             console.warn(`Closing socket (${this.extraNonceAndSessionId ?? this.socket.remoteAddress}) after ${this.invalidMessageCount} invalid messages (${reason})`);
             this.closeSocket();
             return true;
@@ -239,6 +241,7 @@ export class StratumV1Client {
 
                 if (errors.length === 0) {
                     if (this.isBlockedUserAgent(subscriptionMessage.userAgent)) {
+                        poolMetrics.recordConnectionRejected('user_agent');
                         this.logBlockedUserAgent(subscriptionMessage.userAgent);
                         this.closeSocket();
                         return;
@@ -607,6 +610,7 @@ export class StratumV1Client {
 
         // a miner may submit a job that doesn't exist anymore if it was removed by a new block notification (or expired, 5 min)
         if (job == null || (job.ownerSessionId != null && job.ownerSessionId !== this.extraNonceAndSessionId)) {
+            poolMetrics.recordShareRejected('stale');
             if (this.entity) {
                 void this.clientService.incrementRejected(this.entity.address, this.entity.clientName, this.entity.sessionId, 'rejectedStaleJob');
             }
@@ -624,6 +628,7 @@ export class StratumV1Client {
         const jobTemplate = this.stratumV1JobsService.getJobTemplateById(job.jobTemplateId);
 
         if (jobTemplate == null) {
+            poolMetrics.recordShareRejected('stale');
             if (this.entity) {
                 void this.clientService.incrementRejected(this.entity.address, this.entity.clientName, this.entity.sessionId, 'rejectedStaleJob');
             }
@@ -647,6 +652,7 @@ export class StratumV1Client {
             submission.versionMask ?? ''
         ].join(':');
         if (this.miningSubmissionHashes.has(submissionHash)) {
+            poolMetrics.recordShareRejected('duplicate');
             if (this.entity) {
                 void this.clientService.incrementRejected(this.entity.address, this.entity.clientName, this.entity.sessionId, 'rejectedDuplicate');
             }
@@ -665,6 +671,7 @@ export class StratumV1Client {
 
         const versionMask = parseInt(submission.versionMask, 16);
         if ((versionMask & ~VERSION_ROLLING_MASK) !== 0) {
+            poolMetrics.recordShareRejected('invalid');
             const err = new StratumErrorMessage(
                 submission.id,
                 eStratumErrorCode.OtherUnknown,
@@ -693,6 +700,11 @@ export class StratumV1Client {
             if (!success) {
                 return false;
             }
+            poolMetrics.recordShareAccepted();
+            poolMetrics.emitEvent('share', {
+                worker: this.clientAuthorization?.worker ?? null,
+                difficulty: this.sessionDifficulty,
+            });
 
             if (submissionDifficulty >= jobTemplate.blockData.networkDifficulty) {
                 console.log('!!! BLOCK FOUND !!!');
@@ -715,6 +727,10 @@ export class StratumV1Client {
                 });
 
                 await this.notificationService.notifySubscribersBlockFound(this.clientAuthorization.address, jobTemplate.blockData.height, updatedJobBlock, result);
+                poolMetrics.emitEvent('block', {
+                    height: jobTemplate.blockData.height,
+                    worker: this.clientAuthorization.worker,
+                });
             }
             await this.ensureClientEntity();
             try {
@@ -745,6 +761,10 @@ export class StratumV1Client {
                     submissionDifficulty,
                     this.entity.userAgent
                 );
+                poolMetrics.emitEvent('best_diff', {
+                    worker: this.clientAuthorization.worker,
+                    difficulty: submissionDifficulty,
+                });
             }
 
 
@@ -762,6 +782,7 @@ export class StratumV1Client {
             }
 
         } else {
+            poolMetrics.recordShareRejected('low_diff');
             if (this.entity) {
                 void this.clientService.incrementRejected(this.entity.address, this.entity.clientName, this.entity.sessionId, 'rejectedLowDiff');
             }

@@ -6,6 +6,7 @@ import { catchError, combineLatest, delay, EMPTY, filter, from, interval, map, O
 
 import { MiningJob } from '../models/MiningJob';
 import { BitcoinRpcService } from './bitcoin-rpc.service';
+import { poolMetrics } from './pool-metrics.util';
 
 const merkleFn: typeof merkle = (merkle as any).default ?? merkle;
 const merkleProofFn: typeof merkleProof = (merkleProof as any).default ?? merkleProof;
@@ -100,6 +101,7 @@ export class StratumV1JobsService {
                     return null;
                 }
                 this.lastWorkSignature = workSignature;
+                poolMetrics.recordTemplateBuilt();
 
                 return {
                     version: blockTemplate.version,

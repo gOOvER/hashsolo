@@ -10,6 +10,7 @@ import * as zmq from 'zeromq';
 import { RpcBlockService } from '../ORM/rpc-block/rpc-block.service';
 import { IBlockTemplate } from '../models/bitcoin-rpc/IBlockTemplate';
 import { IMiningInfo } from '../models/bitcoin-rpc/IMiningInfo';
+import { poolMetrics } from './pool-metrics.util';
 
 export interface IBlockchainInfo {
     chain: string;
@@ -145,6 +146,7 @@ export class BitcoinRpcService implements OnModuleInit, OnModuleDestroy {
         try {
             for await (const [topic, msg] of sock) {
                 console.log("New Block");
+                poolMetrics.recordZmqMessage();
                 await this.pollMiningInfo(true);
             }
         } catch (e: any) {
