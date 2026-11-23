@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added configurable Stratum & HTTP security controls (`STRATUM_MAX_CONNECTIONS_PER_IP=100`, `STRATUM_MAX_INVALID_MESSAGES=20`, `API_RATE_LIMIT_MAX=120`, `API_RATE_LIMIT_WINDOW_MS=60000`, `METRICS_BEARER_TOKEN`).
 
 ### Changed
+- Improved `BitcoinRpcService` error logging to surface Bitcoin Core JSON-RPC warmup/status messages (e.g. `-28: Loading block index...` / `Verifying blocks...`) instead of generic HTTP 500 strings.
 - Updated `actions/checkout` to `v7` in `.github/workflows/codeql.yml` so all backend workflows use consistent action versions.
 
 ### Security

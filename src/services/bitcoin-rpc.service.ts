@@ -103,8 +103,8 @@ export class BitcoinRpcService implements OnModuleInit, OnModuleDestroy {
 
         this.callRpc('getrpcinfo').then(() => {
             console.log('Bitcoin RPC connected');
-        }, () => {
-            console.error('Could not reach RPC host');
+        }, (err: any) => {
+            console.error(`Could not reach RPC host: ${err?.message ?? err}`);
         });
 
         if (this.configService.get('BITCOIN_ZMQ_HOST')) {
@@ -316,18 +316,26 @@ export class BitcoinRpcService implements OnModuleInit, OnModuleDestroy {
     }
 
     private async callRpc<T>(method: string, params: unknown[] = []): Promise<T> {
-        const response = await this.client.post('', {
-            jsonrpc: '1.0',
-            id: ++this.rpcRequestId,
-            method,
-            params
-        });
+        try {
+            const response = await this.client.post('', {
+                jsonrpc: '1.0',
+                id: ++this.rpcRequestId,
+                method,
+                params
+            });
 
-        if (response.data.error != null) {
-            throw response.data.error;
+            if (response.data.error != null) {
+                throw response.data.error;
+            }
+
+            return response.data.result;
+        } catch (err: any) {
+            const rpcError = err?.response?.data?.error;
+            if (rpcError?.message) {
+                throw new Error(`Bitcoin RPC ${method} (${rpcError.code ?? 'error'}): ${rpcError.message}`);
+            }
+            throw err;
         }
-
-        return response.data.result;
     }
 
     private buildRpcUrl(url: string, port: number): string {
