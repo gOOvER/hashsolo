@@ -15,6 +15,7 @@ import { BitcoinRpcService } from './bitcoin-rpc.service';
 import { ExternalSharesService } from './external-shares.service';
 import { NotificationService } from './notification.service';
 import { StratumV1JobsService } from './stratum-v1-jobs.service';
+import { poolMetrics } from './pool-metrics.util';
 import { getNonNegativeIntEnv, IpConnectionLimiter, normalizeRemoteIp } from './stratum-rate-limit.util';
 
 const DEFAULT_MAX_CONNECTIONS_PER_IP = 100;
@@ -22,6 +23,7 @@ const DEFAULT_MAX_CONNECTIONS_PER_IP = 100;
 @Injectable()
 export class StratumV2Service implements OnModuleInit, OnModuleDestroy {
     private server: Server | null = null;
+    private readonly activeSockets = new Set<Socket>();
     private authorityPrivKey: Buffer | null = null;
     private authorityPublicKeyEncoded: string | null = null;
     private staticKeyPair: { privateKey: Buffer; xOnlyPublicKey: Buffer } | null = null;
@@ -60,6 +62,15 @@ export class StratumV2Service implements OnModuleInit, OnModuleDestroy {
     onModuleDestroy(): void {
         this.server?.close();
         this.server = null;
+        for (const socket of this.activeSockets) {
+            try {
+                socket.end();
+                socket.destroy();
+            } catch {
+                // ignore socket errors during shutdown drain
+            }
+        }
+        this.activeSockets.clear();
     }
 
     public getAuthorityPublicKey(): string | null {
@@ -74,15 +85,18 @@ export class StratumV2Service implements OnModuleInit, OnModuleDestroy {
         const server = new Server((socket: Socket) => {
             const remoteIp = normalizeRemoteIp(socket.remoteAddress);
             if (!this.ipConnectionLimiter.tryAcquire(remoteIp)) {
+                poolMetrics.recordConnectionRejected('ip_limit');
                 console.warn(`Closing SV2 socket from ${remoteIp}: per-IP connection limit reached`);
                 socket.destroy();
                 return;
             }
+            this.activeSockets.add(socket);
 
             let released = false;
             const releaseIp = () => {
                 if (!released) {
                     released = true;
+                    this.activeSockets.delete(socket);
                     this.ipConnectionLimiter.release(remoteIp);
                 }
             };

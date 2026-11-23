@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 - Added `CONTRIBUTORS.md` (linked from `README.md`) crediting `@benjamin-wilson`, upstream PR/issue authors (`@mutatrum`, `@sebrandon1`, `@mweinberg`), and historical git contributors.
+- Added extended Prometheus metrics (`hashsolo_shares_accepted_total`, `hashsolo_shares_rejected_total`, `hashsolo_stratum_connections_rejected_total`, `hashsolo_block_template_age_seconds`, `hashsolo_zmq_last_message_seconds`) in `AppController.metrics()` via `poolMetrics` (`src/services/pool-metrics.util.ts`).
+- Added live Server-Sent Events endpoint `GET /api/stream` in `AppController` for real-time share/block/best-diff events and 15s heartbeats.
+- Added graceful Stratum socket draining on `SIGTERM`/`onModuleDestroy` in `StratumV1Service` and `StratumV2Service`, plus hourly `PRAGMA wal_checkpoint(TRUNCATE)` in `AppService`.
 - Added `AGENTS.md` documenting backend architecture, build/test commands, ENV configurability, and security conventions.
 - Exposed standard Prometheus `/metrics` endpoint alias in `main.ts` alongside `/api/metrics`.
 - Added configurable Stratum & HTTP security controls (`STRATUM_MAX_CONNECTIONS_PER_IP=100`, `STRATUM_MAX_INVALID_MESSAGES=20`, `API_RATE_LIMIT_MAX=120`, `API_RATE_LIMIT_WINDOW_MS=60000`, `METRICS_BEARER_TOKEN`).
