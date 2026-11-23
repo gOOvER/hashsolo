@@ -2,7 +2,21 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Controller, Get, Header, Headers, Inject, MessageEvent, Optional, Sse, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cache } from 'cache-manager';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { firstValueFrom, interval, map, merge, Observable } from 'rxjs';
+
+const APP_VERSION: string = (() => {
+  try {
+    const pkg = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf8'));
+    if (typeof pkg?.version === 'string' && pkg.version.trim()) {
+      return pkg.version.trim();
+    }
+  } catch {
+    // fallback below
+  }
+  return process.env.npm_package_version ?? '1.3.0';
+})();
 
 import { AddressSettingsService } from './ORM/address-settings/address-settings.service';
 import { BlocksService } from './ORM/blocks/blocks.service';
@@ -52,7 +66,7 @@ export class AppController {
       highScores,
       uptime: this.uptime,
       fee: this.getPoolFeePercent(),
-      version: '1.2.0',
+      version: APP_VERSION,
       network: this.configService.get<string>('NETWORK') || 'mainnet',
       ...(sv2PublicKey
         ? {

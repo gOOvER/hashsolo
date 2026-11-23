@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed
+- Read `GET /api/info` `version` dynamically from `package.json` (`APP_VERSION`) in `AppController` instead of a hardcoded string.
+
 ## [1.3.0] - 2026-11-23
 
 ### Added
